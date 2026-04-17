@@ -1,0 +1,141 @@
+---
+title: "visualization4"
+format: html
+editor: visual
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+library(dplyr)
+library(plotly)
+
+students <- read.csv("StudentPerformanceFactors.csv")
+
+avg_study_overall <- mean(students$Hours_Studied, na.rm = TRUE)
+avg_sleep_overall <- mean(students$Sleep_Hours, na.rm = TRUE)
+avg_score_overall <- mean(students$Exam_Score, na.rm = TRUE)
+
+profile_stats <- students %>%
+  mutate(
+    is_athlete = ifelse(Physical_Activity >= 4, "Athlete", "Non-Athlete"),
+    profile_name = paste(is_athlete, ifelse(Extracurricular_Activities == "Yes", "\nWith Extracurriculars", "\nNo Extracurriculars"))
+  ) %>%
+  group_by(profile_name) %>%
+  summarize(
+    study_hrs = round(mean(Hours_Studied, na.rm = TRUE), 1),
+    sleep_hrs = round(mean(Sleep_Hours, na.rm = TRUE), 1),
+    exam_score = round(mean(Exam_Score, na.rm = TRUE), 1),
+    .groups = 'drop'
+  )
+
+sort_study_high <- profile_stats %>% arrange(desc(study_hrs)) %>% pull(profile_name)
+sort_study_low  <- profile_stats %>% arrange(study_hrs) %>% pull(profile_name)
+sort_sleep_high <- profile_stats %>% arrange(desc(sleep_hrs)) %>% pull(profile_name)
+sort_sleep_low  <- profile_stats %>% arrange(sleep_hrs) %>% pull(profile_name)
+sort_score_high <- profile_stats %>% arrange(desc(exam_score)) %>% pull(profile_name)
+sort_score_low  <- profile_stats %>% arrange(exam_score) %>% pull(profile_name)
+
+baseline_note <- list(
+  text = paste0(
+    "<b>Global Averages</b><br>",
+    "Study: ", round(avg_study_overall, 1), " hrs<br>",
+    "Sleep: ", round(avg_sleep_overall, 1), " hrs<br>",
+    "Score: ", round(avg_score_overall, 1)
+  ),
+  xref = "paper", yref = "paper",
+  x = 0, y = 1.25,
+  xanchor = "left", yanchor = "top",
+  showarrow = FALSE,
+  align = "left",
+  bgcolor = "#f8f9fa",
+  bordercolor = "#232D4B",
+  borderwidth = 1,
+  borderpad = 6,
+  font = list(size = 11, color = "#232D4B")
+)
+
+metric_toggle_buttons <- list(
+  type = "buttons",
+  direction = "right",
+  y = 1.25, x = 0.45,
+  xanchor = "center", yanchor = "top",
+  showactive = TRUE,
+  buttons = list(
+    list(
+      method = "update",
+      args = list(
+        list(visible = c(TRUE, TRUE, FALSE)),
+        list(yaxis = list(title = "Average Hours", gridcolor = "#e5e5e5"))
+      ),
+      label = "Compare Time"
+    ),
+    list(
+      method = "update",
+      args = list(
+        list(visible = c(FALSE, FALSE, TRUE)),
+        list(yaxis = list(title = "Average Exam Score", gridcolor = "#e5e5e5"))
+      ),
+      label = "View Exam Scores"
+    )
+  )
+)
+
+sorting_dropdown <- list(
+  type = "dropdown",
+  direction = "down",
+  y = 1.25, x = 1,
+  xanchor = "right", yanchor = "top",
+  showactive = TRUE,
+  buttons = list(
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_study_high)), label = "Sort: Study (High to Low)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_study_low)), label = "Sort: Study (Low to High)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_sleep_high)), label = "Sort: Sleep (High to Low)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_sleep_low)), label = "Sort: Sleep (Low to High)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_score_high)), label = "Sort: Score (High to Low)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_score_low)), label = "Sort: Score (Low to High)")
+  )
+)
+
+student_plot <- plot_ly(profile_stats, x = ~profile_name)
+
+student_plot <- student_plot %>%
+  add_bars(
+    y = ~study_hrs,
+    name = "Study Hours",
+    marker = list(color = "#232D4B"),
+    hovertemplate = "<b>%{x}</b><br>Study: %{y} hrs<extra></extra>",
+    visible = TRUE
+  ) %>%
+  add_bars(
+    y = ~sleep_hrs,
+    name = "Sleep Hours",
+    marker = list(color = "#E57200"),
+    hovertemplate = "<b>%{x}</b><br>Sleep: %{y} hrs<extra></extra>",
+    visible = TRUE
+  ) %>%
+  add_bars(
+    y = ~exam_score,
+    name = "Exam Score",
+    marker = list(color = "#5C7F92"),
+    hovertemplate = "<b>%{x}</b><br>Exam Score: %{y}<extra></extra>",
+    visible = FALSE
+  )
+
+student_plot <- student_plot %>% layout(
+  title = list(text = "<b>Time Allocation & Exam Performance by Lifestyle</b>", font = list(size = 18, color = "#232D4B"), y = 0.98),
+  margin = list(t = 140),
+  xaxis = list(title = "", tickangle = 0, tickfont = list(size = 12), categoryorder = "array", categoryarray = sort_study_high),
+  yaxis = list(title = "Average Hours", gridcolor = "#e5e5e5"),
+  barmode = 'group',
+  paper_bgcolor = "white",
+  plot_bgcolor = "white",
+  annotations = list(baseline_note),
+  legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.15),
+  updatemenus = list(metric_toggle_buttons, sorting_dropdown)
+)
+
+student_plot
+```
