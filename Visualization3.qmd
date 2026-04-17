@@ -1,0 +1,36 @@
+---
+title: "Sleep Hours vs Test Scores Analysis"
+format: html
+---
+Intuitively, you might expect that students who sleep more perform better on their exams.
+However, the data is telling us a different story. The scatterplot below plots every student's
+sleep hours and their exam score. The flat orange trend line confirms there is
+**little to no correlation** between how a student's sleep hours and how well they do
+on  their exams. This tells us that sleep alone is not a meaningful predictor of academic performance.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+library(ggplot2)
+library(plotly)
+
+df <- read.csv("StudentPerformanceFactors.csv")
+
+p <- ggplot(df, aes(x = Sleep_Hours, y = Exam_Score)) +
+  geom_jitter(alpha = 0.08, color = "#3B5998", width = 0.25, height = 0.5, size = 1) +
+  geom_smooth(method = "lm", color = "darkorange", se = TRUE, linewidth = 1.2) +
+  stat_summary(fun = mean, geom = "point", shape = 18, size = 4, color = "red") +
+  scale_y_continuous(limits = c(40, 100), breaks = seq(40, 100, 20)) +
+  scale_x_continuous(breaks = 4:10) +
+  labs(
+    title = "Sleep Hours vs. Exam Score",
+    subtitle = "Red diamonds = group averages. Flat trend line shows near-zero correlation.",
+    x = "Sleep Hours per Night",
+    y = "Exam Score (0–100)"
+  ) +
+  theme_minimal(base_size = 13)
+
+ggplotly(p)
+```
