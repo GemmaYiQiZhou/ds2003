@@ -1,5 +1,5 @@
 ---
-title: "Economics Dashboard"
+title: "Visualization 2"
 format: 
   dashboard:
     orientation: rows
@@ -16,13 +16,10 @@ library(scales)
 library(dplyr)
 ```
 
-## Row
 
-## Introduction
-Hello
 
 ## Row 
-### Main chart (required)
+### Visualization 2
 
 ```{r}
 df <- read.csv("StudentPerformanceFactors.csv")
@@ -228,3 +225,7 @@ p %>%
   )
 
 ```
+
+## Row
+### Interpretation
+There is a slight positive relationship between hours studied and exam score, suggesting that increased study time is generally associated with better performance. Additionally, for the same number of hours studied, students with higher attendance tend to achieve higher exam scores, indicating that attendance may play an important supporting role in academic success.
