@@ -1,0 +1,121 @@
+---
+title: "Student Performance Factors Dashboard"
+format: 
+  dashboard:
+    orientation: rows
+    theme: cosmo
+    embed-resources: true
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(plotly)
+
+library(ggplot2)
+library(scales)
+library(dplyr)
+
+data("economics", package = "ggplot2")
+```
+
+## Row
+
+## Introduction
+Hello
+
+## Row 
+### Main chart (required)
+
+```{r}
+# TODO: Create your main interactive line chart here.
+# Requirements:
+# - date on x, unemploy on y
+# - custom hover text
+# - range slider OR zoom buttons
+# - clear title + axis labels
+#| title: "U.S. Unemployment Over Time"
+economics <- economics %>%
+    mutate(
+    hover_text = paste0(
+      "<b>Date:</b> ", format(date, "%m-%d-%Y"),
+      "<br><b>Unemployment:</b> ", comma(unemploy)
+    )
+  )
+
+main_chart <- plot_ly(
+  data = economics,
+  x = ~date,
+  y = ~unemploy,
+  type = "scatter",
+  mode = "lines",
+  text = ~hover_text,
+  hoverinfo = "text",
+  line = list(width = 2),
+  name = "Unemployment"
+) %>%
+  layout(
+    title = "U.S. Unemployment Over Time",
+    xaxis = list(
+      title = "Date",
+      rangeslider = list(visible = TRUE),
+      rangeselector = list(
+        buttons = list(
+          list(count = 5, label = "5y", step = "year", stepmode = "backward"),
+          list(count = 10, label = "10y", step = "year", stepmode = "backward"),
+          list(count = 20, label = "20y", step = "year", stepmode = "backward"),
+          list(step = "all", label = "All")
+        )
+      )
+    ),
+    yaxis = list(
+      title = "Number of Unemployed People"
+    )
+  )
+
+main_chart
+```
+
+### Supporting view (choose A, B, or C)
+
+```{r}
+# TODO: Add your supporting view here (A, B, or C).
+# Subset to most recent 10 years in dataset
+#| title: "U.S. Unemployment Over the last decade in the data"
+last_date <- max(economics$date)
+recent_data <- economics %>%
+  filter(date >= (last_date - 3652))
+
+recent_data <- recent_data %>%
+  mutate(
+    hover_text = paste0(
+      "<b>Date:</b> ", format(date, "%m-%d-%Y"),
+      "<br><b>Unemployment:</b> ", comma(unemploy)
+    )
+  )
+
+recent_chart <- plot_ly(
+  data = recent_data,
+  x = ~date,
+  y = ~unemploy,
+  type = "scatter",
+  mode = "lines",
+  text = ~hover_text,
+  hoverinfo = "text",
+  line = list(width = 2, color = "darkorange"),
+  name = "Recent unemployment"
+) %>%
+  layout(
+    title = "U.S. Unemployment Over the Last 10 Years in the Dataset",
+    xaxis = list(title = "Date"),
+    yaxis = list(title = "Number of Unemployed People")
+  )
+
+recent_chart
+```
+
+## Rows
+## Interpretation
+Bye
+
+
+
