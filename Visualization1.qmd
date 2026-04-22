@@ -1,0 +1,230 @@
+---
+title: "Effect of Family Income on Exam Performance"
+format:
+  dashboard:
+    orientation: rows
+    theme: cosmo
+    embed-resources: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+library(tidyverse)
+library(plotly)
+
+df <- read.csv("StudentPerformanceFactors.csv")
+
+df$Family_Income        <- as.character(df$Family_Income)
+df$Parental_Involvement <- as.character(df$Parental_Involvement)
+df$Access_to_Resources  <- as.character(df$Access_to_Resources)
+
+pi_levels  <- c("High", "Medium", "Low")
+atr_levels <- c("High", "Medium", "Low")
+pi_opts    <- c("All", pi_levels)
+atr_opts   <- c("All", atr_levels)
+
+income_colors <- c(
+  "Low"    = "#EF553B",
+  "Medium" = "#00CC96",
+  "High"   = "#636EFA"
+)
+
+combos <- expand.grid(pi = pi_opts, atr = atr_opts, stringsAsFactors = FALSE)
+
+fig            <- plot_ly()
+visibility_map <- list()
+trace_index    <- 0
+
+for (i in seq_len(nrow(combos))) {
+  pi_val     <- combos$pi[i]
+  atr_val    <- combos$atr[i]
+  is_default <- (pi_val == "All" && atr_val == "All")
+
+  sub <- df
+  if (pi_val  != "All") sub <- sub[sub$Parental_Involvement == pi_val, ]
+  if (atr_val != "All") sub <- sub[sub$Access_to_Resources  == atr_val, ]
+
+  sub$Family_Income <- factor(sub$Family_Income, levels = c("Low", "Medium", "High"))
+
+  for (inc in c("Low", "Medium", "High")) {
+    sub_inc <- sub[sub$Family_Income == inc, ]
+    scores  <- sub_inc$Exam_Score
+
+    # Pre-compute box stats
+    mn  <- round(mean(scores, na.rm = TRUE), 2)
+    q1  <- quantile(scores, 0.25, na.rm = TRUE)
+    med <- median(scores, na.rm = TRUE)
+    q3  <- quantile(scores, 0.75, na.rm = TRUE)
+    iqr <- q3 - q1
+    lo  <- round(min(scores, na.rm = TRUE), 2)
+    hi  <- round(max(scores, na.rm = TRUE), 2)
+
+    hover_text <- paste0(
+      "<b>", inc, " Income</b><br>",
+      "Max: ", hi,  "<br>",
+      "Mean: ", mn, "<br>",
+      "Median: ", med, "<br>",
+      "Min: ", lo
+    )
+
+    fig <- fig %>% add_trace(
+      x              = sub_inc$Family_Income,
+      y              = scores,
+      type           = "box",
+      name           = inc,
+      marker         = list(color = income_colors[[inc]]),
+      line           = list(color = income_colors[[inc]]),
+      fillcolor      = paste0(income_colors[[inc]], "55"),
+      boxpoints      = "outliers",
+      hoverinfo      = "none",          # disable box hover entirely
+      visible        = is_default,
+      legendgroup    = inc,
+      showlegend     = (i == 0),
+      offsetgroup    = inc,
+      alignmentgroup = "fixed"
+    )
+
+    trace_index <- trace_index + 1
+    visibility_map[[length(visibility_map) + 1]] <- list(
+      pi = pi_val, atr = atr_val, trace = trace_index
+    )
+
+    # Invisible scatter point at median — carries the unified tooltip
+    fig <- fig %>% add_trace(
+      x          = inc,
+      y          = med,
+      type       = "scatter",
+      mode       = "markers",
+      name       = inc,
+      legendgroup = inc,
+      showlegend = FALSE,
+      marker     = list(color = "rgba(0,0,0,0)", size = 40),  # fully transparent, large hit area
+      hovertemplate = paste0(
+        "<b>", inc, " Income</b><br>",
+        "Max: ", hi,  "<br>",
+        "Mean: ", mn, "<br>",
+        "Median: ", med, "<br>",
+        "Min: ", lo,
+        "<extra></extra>"
+      ),
+      visible    = is_default
+    )
+
+    trace_index <- trace_index + 1
+    visibility_map[[length(visibility_map) + 1]] <- list(
+      pi = pi_val, atr = atr_val, trace = trace_index
+    )
+    
+    # Outlier points with tooltips
+    outliers <- scores[scores < q1 - 1.5 * iqr | scores > q3 + 1.5 * iqr]
+    if (length(outliers) > 0) {
+      fig <- fig %>% add_trace(
+        x             = rep(inc, length(outliers)),
+        y             = outliers,
+        type          = "scatter",
+        mode          = "markers",
+        name          = inc,
+        legendgroup   = inc,
+        showlegend    = FALSE,
+        marker        = list(color = income_colors[[inc]], size = 6),
+        hoverlabel    = list(bgcolor = "#000000", font = list(color = "#ffffff")),
+        hovertemplate = paste0(
+          "<b>", inc, " Income</b><br>",
+          "Outlier: %{y}<br>",
+          "<extra></extra>"
+        ),
+        visible = is_default
+      )
+
+      trace_index <- trace_index + 1
+      visibility_map[[length(visibility_map) + 1]] <- list(
+        pi = pi_val, atr = atr_val, trace = trace_index
+      )
+    }
+  }
+}
+
+make_vis <- function(sel_pi, sel_atr) {
+  vapply(visibility_map, function(m) m$pi == sel_pi && m$atr == sel_atr, logical(1))
+}
+
+pi_buttons <- lapply(pi_opts, function(pv) {
+  list(method = "update",
+       args   = list(list(visible = as.list(make_vis(pv, "All")))),
+       label  = pv)
+})
+
+atr_buttons <- lapply(atr_opts, function(av) {
+  list(method = "update",
+       args   = list(list(visible = as.list(make_vis("All", av)))),
+       label  = av)
+})
+
+fig <- fig %>%
+  layout(
+    title = list(
+      text    = "Effect of Family Income on Exam Performance",
+      x       = 0.5,
+      xanchor = "center",
+      y       = 0.97,
+      yanchor = "top",
+      font    = list(size = 16)
+    ),
+    xaxis = list(
+      title         = "Family Income",
+      type          = "category",
+      categoryorder = "array",
+      categoryarray = c("Low", "Medium", "High")
+    ),
+    yaxis   = list(title = "Exam Score"),
+    boxmode = "overlay",
+    margin  = list(t = 130, r = 30, b = 60, l = 60),
+
+    updatemenus = list(
+      list(
+        type        = "dropdown",
+        active      = 0,
+        x           = 0.01,
+        xanchor     = "left",
+        y           = 1.10,
+        yanchor     = "top",
+        buttons     = pi_buttons,
+        bgcolor     = "#ffffff",
+        bordercolor = "#aaaaaa",
+        font        = list(size = 12)
+      ),
+      list(
+        type        = "dropdown",
+        active      = 0,
+        x           = 0.13,
+        xanchor     = "left",
+        y           = 1.10,
+        yanchor     = "top",
+        buttons     = atr_buttons,
+        bgcolor     = "#ffffff",
+        bordercolor = "#aaaaaa",
+        font        = list(size = 12)
+      )
+    ),
+
+    annotations = list(
+      list(
+        text      = "<b>Parental Involvement:</b>",
+        x = 0,  xref = "paper", xanchor = "left",
+        y = 1.17, yref = "paper", yanchor = "top",
+        showarrow = FALSE, font = list(size = 12, color = "#333333")
+      ),
+      list(
+        text      = "<b>Access to Resources:</b>",
+        x = 0.12, xref = "paper", xanchor = "left",
+        y = 1.17, yref = "paper", yanchor = "top",
+        showarrow = FALSE, font = list(size = 12, color = "#333333")
+      )
+    )
+  )
+
+fig
+```
