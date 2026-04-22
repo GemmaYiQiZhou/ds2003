@@ -2,9 +2,13 @@
 title: "Student Performance Factors Dashboard"
 format: 
   dashboard:
-    orientation: rows
+    scrolling: true
     theme: cosmo
     embed-resources: true
+execute:
+  echo: false
+  warning: false
+  message: false
 ---
 
 ```{r setup, include=FALSE}
@@ -18,20 +22,23 @@ library(ggplot2)
 df <- read.csv("StudentPerformanceFactors.csv")
 ```
 
-## Row {height=180}
+## Row
 
-### Project Overview {width=100%}
+### Project Overview {width=50%}
 This dashboard explores the *Student Performance Factors* dataset from Kaggle, which contains information about students' academic performance and the personal and social-economical factors that may influence their exam score.
 The dataset captures multiple dimensions of student experience. These include study behaviors (such as hours studied and attendance), lifestyle patterns (including sleep and physical activity), family background (such as income and parental involvement), and school-related conditions (like teacher quality and access to resources). Together, these variables provide a more holistic view of the factors that may influence academic outcomes, with **Exam_Score** as the primary measure of performance.
 
+### Project Goals
+The goal of this project is to explore how different aspects of a student’s environment and behavior are associated with exam performance, and to identify which factors appear most influential.
 
 ## Row {height=420}
 ### Static insight: Distribution of Exam Scores {width=50%}
 ```{r}
 ggplot(df, aes(x = Exam_Score)) +
-  geom_histogram(bins = 25, fill = "#2C7FB8", color = "white") +
+  geom_histogram(bins = 25, fill = "#5C7F92", color = "white") +
   labs(
     title = "Distribution of Exam Scores",
+    subtitle = "Scores are roughly normally distributed, centered around 65-70.",
     x = "Exam Score",
     y = "Number of Students"
   ) +
@@ -59,9 +66,6 @@ ggplot(motivation_summary, aes(x = Motivation_Level, y = avg_score, fill = Motiv
 ### What these charts show
 The distribution of exam scores provides a baseline view of student performance. Most students cluster within a central range, rather than at the extremes, suggesting that differences in performance are systematic rather than random. This motivates further exploration into which factors may explain this variation.
 Average exam scores do not vary dramatically across motivation levels. While students with higher motivation show slightly better performance, the differences are relatively small. This suggests that motivation alone may not be a strong explanatory factor, and that other variables—such as study habits or external support—may play a more significant role.
-
-### Project Goals
-The goal of this project is to explore how different aspects of a student’s environment and behavior are associated with exam performance, and to identify which factors appear most influential.
 
 More specifically, this dashboard aims to:
 
@@ -524,131 +528,127 @@ pl
 
 ### Interactive Visualization 4
 ```{r}
+library(dplyr)
+library(plotly)
+
 students <- read.csv("StudentPerformanceFactors.csv")
-avg_study_overall <- mean(students$Hours_Studied, na.rm = TRUE)
-avg_sleep_overall <- mean(students$Sleep_Hours, na.rm = TRUE)
-avg_score_overall <- mean(students$Exam_Score, na.rm = TRUE)
 
 profile_stats <- students %>%
   mutate(
     is_athlete = ifelse(Physical_Activity >= 4, "Athlete", "Non-Athlete"),
-    profile_name = paste(is_athlete, ifelse(Extracurricular_Activities == "Yes", "\nWith Extracurriculars", "\nNo Extracurriculars"))
+    has_extra = ifelse(Extracurricular_Activities == "Yes", "+ Extras", "No Extras")
   ) %>%
-  group_by(profile_name) %>%
+  group_by(is_athlete, has_extra) %>%
   summarize(
     study_hrs = round(mean(Hours_Studied, na.rm = TRUE), 1),
     sleep_hrs = round(mean(Sleep_Hours, na.rm = TRUE), 1),
     exam_score = round(mean(Exam_Score, na.rm = TRUE), 1),
     .groups = 'drop'
+  ) %>%
+  mutate(
+    profile_name = paste0(is_athlete, "<br>", has_extra)
   )
 
-sort_study_high <- profile_stats %>% arrange(desc(study_hrs)) %>% pull(profile_name)
-sort_study_low  <- profile_stats %>% arrange(study_hrs) %>% pull(profile_name)
-sort_sleep_high <- profile_stats %>% arrange(desc(sleep_hrs)) %>% pull(profile_name)
-sort_sleep_low  <- profile_stats %>% arrange(sleep_hrs) %>% pull(profile_name)
-sort_score_high <- profile_stats %>% arrange(desc(exam_score)) %>% pull(profile_name)
-sort_score_low  <- profile_stats %>% arrange(exam_score) %>% pull(profile_name)
-
-baseline_note <- list(
-  text = paste0(
-    "<b>Global Averages</b><br>",
-    "Study: ", round(avg_study_overall, 1), " hrs<br>",
-    "Sleep: ", round(avg_sleep_overall, 1), " hrs<br>",
-    "Score: ", round(avg_score_overall, 1)
-  ),
-  xref = "paper", yref = "paper",
-  x = 0, y = 1.25,
-  xanchor = "left", yanchor = "top",
-  showarrow = FALSE,
-  align = "left",
-  bgcolor = "#f8f9fa",
-  bordercolor = "#232D4B",
-  borderwidth = 1,
-  borderpad = 6,
-  font = list(size = 11, color = "#232D4B")
+gap_row <- data.frame(
+  is_athlete = "Gap",
+  has_extra = "Gap",
+  profile_name = " ", 
+  study_hrs = NA,
+  sleep_hrs = NA,
+  exam_score = NA
 )
 
-metric_toggle_buttons <- list(
-  type = "buttons",
-  direction = "right",
-  y = 1.25, x = 0.45,
-  xanchor = "center", yanchor = "top",
-  showactive = TRUE,
-  buttons = list(
-    list(
-      method = "update",
-      args = list(
-        list(visible = c(TRUE, TRUE, FALSE)),
-        list(yaxis = list(title = "Average Hours", gridcolor = "#e5e5e5"))
-      ),
-      label = "Compare Time"
-    ),
-    list(
-      method = "update",
-      args = list(
-        list(visible = c(FALSE, FALSE, TRUE)),
-        list(yaxis = list(title = "Average Exam Score", gridcolor = "#e5e5e5"))
-      ),
-      label = "View Exam Scores"
-    )
-  )
+plot_data <- bind_rows(
+  profile_stats %>% filter(is_athlete == "Athlete"),
+  gap_row,
+  profile_stats %>% filter(is_athlete == "Non-Athlete")
 )
 
-sorting_dropdown <- list(
-  type = "dropdown",
-  direction = "down",
-  y = 1.25, x = 1,
-  xanchor = "right", yanchor = "top",
-  showactive = TRUE,
-  buttons = list(
-    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_study_high)), label = "Sort: Study (High to Low)"),
-    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_study_low)), label = "Sort: Study (Low to High)"),
-    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_sleep_high)), label = "Sort: Sleep (High to Low)"),
-    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_sleep_low)), label = "Sort: Sleep (Low to High)"),
-    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_score_high)), label = "Sort: Score (High to Low)"),
-    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_score_low)), label = "Sort: Score (Low to High)")
-  )
-)
+ath <- profile_stats %>% filter(is_athlete == "Athlete")
+non <- profile_stats %>% filter(is_athlete == "Non-Athlete")
 
-student_plot <- plot_ly(profile_stats, x = ~profile_name)
+sort_study_desc <- c(ath %>% arrange(desc(study_hrs)) %>% pull(profile_name), " ", non %>% arrange(desc(study_hrs)) %>% pull(profile_name))
+sort_study_asc  <- c(ath %>% arrange(study_hrs) %>% pull(profile_name), " ", non %>% arrange(study_hrs) %>% pull(profile_name))
+sort_sleep_desc <- c(ath %>% arrange(desc(sleep_hrs)) %>% pull(profile_name), " ", non %>% arrange(desc(sleep_hrs)) %>% pull(profile_name))
+sort_sleep_asc  <- c(ath %>% arrange(sleep_hrs) %>% pull(profile_name), " ", non %>% arrange(sleep_hrs) %>% pull(profile_name))
+sort_score_desc <- c(ath %>% arrange(desc(exam_score)) %>% pull(profile_name), " ", non %>% arrange(desc(exam_score)) %>% pull(profile_name))
+sort_score_asc  <- c(ath %>% arrange(exam_score) %>% pull(profile_name), " ", non %>% arrange(exam_score) %>% pull(profile_name))
 
-student_plot <- student_plot %>%
+plot_data$profile_name <- factor(plot_data$profile_name, levels = sort_study_desc)
+
+time_plot <- plot_ly(plot_data, x = ~profile_name) %>%
   add_bars(
     y = ~study_hrs,
     name = "Study Hours",
     marker = list(color = "#232D4B"),
-    hovertemplate = "<b>%{x}</b><br>Study: %{y} hrs<extra></extra>",
-    visible = TRUE
+    hovertemplate = "<b>%{x}</b><br>Study: %{y} hrs<extra></extra>"
   ) %>%
   add_bars(
     y = ~sleep_hrs,
     name = "Sleep Hours",
     marker = list(color = "#E57200"),
-    hovertemplate = "<b>%{x}</b><br>Sleep: %{y} hrs<extra></extra>",
-    visible = TRUE
+    hovertemplate = "<b>%{x}</b><br>Sleep: %{y} hrs<extra></extra>"
   ) %>%
-  add_bars(
-    y = ~exam_score,
-    name = "Exam Score",
-    marker = list(color = "#5C7F92"),
-    hovertemplate = "<b>%{x}</b><br>Exam Score: %{y}<extra></extra>",
-    visible = FALSE
+  layout(
+    yaxis = list(title = "Average Hours", gridcolor = "#e5e5e5", range = c(0, 22)),
+    barmode = 'group'
   )
 
-student_plot <- student_plot %>% layout(
-  title = list(text = "<b>Time Allocation & Exam Performance by Lifestyle</b>", font = list(size = 18, color = "#232D4B"), y = 0.98),
-  margin = list(t = 140),
-  xaxis = list(title = "", tickangle = 0, tickfont = list(size = 12), categoryorder = "array", categoryarray = sort_study_high),
-  yaxis = list(title = "Average Hours", gridcolor = "#e5e5e5"),
-  barmode = 'group',
-  paper_bgcolor = "white",
-  plot_bgcolor = "white",
-  annotations = list(baseline_note),
-  legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.15),
-  updatemenus = list(metric_toggle_buttons, sorting_dropdown)
+score_plot <- plot_ly(plot_data, x = ~profile_name) %>%
+  add_bars(
+    y = ~exam_score,
+    name = "Final Exam Score",
+    marker = list(color = "#5C7F92"),
+    hovertemplate = "<b>%{x}</b><br>Exam Score: %{y}<extra></extra>"
+  ) %>%
+  layout(
+    yaxis = list(title = "Average Score", gridcolor = "#e5e5e5", range = c(0, 110))
+  )
+
+sorting_dropdown <- list(
+  type = "dropdown",
+  direction = "down",
+  x = 1,
+  xref = "container",
+  xanchor = "right",
+  y = 0.98,
+  yref = "container",
+  yanchor = "top",
+  buttons = list(
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_study_desc, "xaxis2.categoryorder" = "array", "xaxis2.categoryarray" = sort_study_desc)), label = "Sort: Study (High to Low)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_study_asc, "xaxis2.categoryorder" = "array", "xaxis2.categoryarray" = sort_study_asc)), label = "Sort: Study (Low to High)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_sleep_desc, "xaxis2.categoryorder" = "array", "xaxis2.categoryarray" = sort_sleep_desc)), label = "Sort: Sleep (High to Low)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_sleep_asc, "xaxis2.categoryorder" = "array", "xaxis2.categoryarray" = sort_sleep_asc)), label = "Sort: Sleep (Low to High)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_score_desc, "xaxis2.categoryorder" = "array", "xaxis2.categoryarray" = sort_score_desc)), label = "Sort: Score (High to Low)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_score_asc, "xaxis2.categoryorder" = "array", "xaxis2.categoryarray" = sort_score_asc)), label = "Sort: Score (Low to High)")
+  )
 )
 
-student_plot
+final_plot <- subplot(time_plot, score_plot, nrows = 1, margin = 0.05, titleX = FALSE, titleY = TRUE) %>%
+  layout(
+    title = list(
+      text = "<b>Impact of Athletics and Extracurriculars on Habits and Performance</b>",
+      font = list(size = 18, color = "#232D4B"),
+      x = 0.5,
+      xanchor = "center",
+      y = 0.98,
+      yref = "container"
+    ),
+    annotations = list(
+      list(x = 0.24, y = 1.02, text = "<b>Study and Sleep Time</b>", showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 14), xanchor = "center", yanchor = "bottom"),
+      list(x = 0.76, y = 1.02, text = "<b>Exam Scores</b>", showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 14), xanchor = "center", yanchor = "bottom")
+    ),
+    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.35),
+    margin = list(t = 120, b = 120),
+    paper_bgcolor = "white",
+    plot_bgcolor = "white",
+    barmode = 'group',
+    xaxis = list(tickangle = -45, tickfont = list(size = 11)),
+    xaxis2 = list(tickangle = -45, tickfont = list(size = 11)),
+    updatemenus = list(sorting_dropdown)
+  )
+
+final_plot
 ```
 
 
