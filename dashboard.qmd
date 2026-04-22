@@ -3,7 +3,7 @@ title: "Student Performance Factors Dashboard"
 format: 
   dashboard:
     orientation: rows
-    theme: flatly
+    theme: cosmo
     embed-resources: true
 ---
 
@@ -18,14 +18,14 @@ library(ggplot2)
 df <- read.csv("StudentPerformanceFactors.csv")
 ```
 
-## Row
+## Row {height=180}
 
 ### Project Overview {width=100%}
 This dashboard explores the *Student Performance Factors* dataset from Kaggle, which contains information about students' academic performance and the personal and social-economical factors that may influence their exam score.
 The dataset captures multiple dimensions of student experience. These include study behaviors (such as hours studied and attendance), lifestyle patterns (including sleep and physical activity), family background (such as income and parental involvement), and school-related conditions (like teacher quality and access to resources). Together, these variables provide a more holistic view of the factors that may influence academic outcomes, with **Exam_Score** as the primary measure of performance.
 
 
-## Row
+## Row {height=420}
 ### Static insight: Distribution of Exam Scores {width=50%}
 ```{r}
 ggplot(df, aes(x = Exam_Score)) +
@@ -37,7 +37,7 @@ ggplot(df, aes(x = Exam_Score)) +
   ) +
   theme_minimal(base_size = 13)
 ```
-The distribution of exam scores provides a baseline view of student performance. Most students cluster within a central range, rather than at the extremes, suggesting that differences in performance are systematic rather than random. This motivates further exploration into which factors may explain this variation.
+
 
 ### Static insight {width=50%}
 ```{r}
@@ -55,11 +55,12 @@ ggplot(motivation_summary, aes(x = Motivation_Level, y = avg_score, fill = Motiv
   ) +
   theme_minimal(base_size = 13)
 ```
+## Row
+### What these charts show
+The distribution of exam scores provides a baseline view of student performance. Most students cluster within a central range, rather than at the extremes, suggesting that differences in performance are systematic rather than random. This motivates further exploration into which factors may explain this variation.
 Average exam scores do not vary dramatically across motivation levels. While students with higher motivation show slightly better performance, the differences are relatively small. This suggests that motivation alone may not be a strong explanatory factor, and that other variables—such as study habits or external support—may play a more significant role.
 
-## Row
-### Project Goals {width=100%}
-
+### Project Goals
 The goal of this project is to explore how different aspects of a student’s environment and behavior are associated with exam performance, and to identify which factors appear most influential.
 
 More specifically, this dashboard aims to:

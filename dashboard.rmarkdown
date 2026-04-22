@@ -1,0 +1,657 @@
+---
+title: "Student Performance Factors Dashboard"
+format: 
+  dashboard:
+    orientation: rows
+    theme: cosmo
+    embed-resources: true
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(plotly)
+library(scales)
+library(DT)
+library(ggplot2)
+
+#Load data
+df <- read.csv("StudentPerformanceFactors.csv")
+```
+
+## Row {height=180}
+
+### Project Overview {width=100%}
+This dashboard explores the *Student Performance Factors* dataset from Kaggle, which contains information about students' academic performance and the personal and social-economical factors that may influence their exam score.
+The dataset captures multiple dimensions of student experience. These include study behaviors (such as hours studied and attendance), lifestyle patterns (including sleep and physical activity), family background (such as income and parental involvement), and school-related conditions (like teacher quality and access to resources). Together, these variables provide a more holistic view of the factors that may influence academic outcomes, with **Exam_Score** as the primary measure of performance.
+
+
+## Row {height=420}
+### Static insight: Distribution of Exam Scores {width=50%}
+```{r}
+ggplot(df, aes(x = Exam_Score)) +
+  geom_histogram(bins = 25, fill = "#2C7FB8", color = "white") +
+  labs(
+    title = "Distribution of Exam Scores",
+    x = "Exam Score",
+    y = "Number of Students"
+  ) +
+  theme_minimal(base_size = 13)
+```
+
+
+### Static insight {width=50%}
+```{r}
+motivation_summary <- df %>%
+  group_by(Motivation_Level) %>%
+  summarise(avg_score = mean(Exam_Score, na.rm = TRUE), .groups = "drop")
+
+ggplot(motivation_summary, aes(x = Motivation_Level, y = avg_score, fill = Motivation_Level)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = round(avg_score, 1)), vjust = -0.4) +
+  labs(
+    title = "Average Exam Score by Motivation Level",
+    x = "Motivation Level",
+    y = "Average Exam Score"
+  ) +
+  theme_minimal(base_size = 13)
+```
+## Row
+### What these charts show
+The distribution of exam scores provides a baseline view of student performance. Most students cluster within a central range, rather than at the extremes, suggesting that differences in performance are systematic rather than random. This motivates further exploration into which factors may explain this variation.
+Average exam scores do not vary dramatically across motivation levels. While students with higher motivation show slightly better performance, the differences are relatively small. This suggests that motivation alone may not be a strong explanatory factor, and that other variables—such as study habits or external support—may play a more significant role.
+
+### Project Goals
+The goal of this project is to explore how different aspects of a student’s environment and behavior are associated with exam performance, and to identify which factors appear most influential.
+
+More specifically, this dashboard aims to:
+
+- Examine whether **academic habits** (such as hours studied and attendance) are strong predictors of performance  
+- Investigate the impact of **support systems**, including parental involvement and access to resources  
+- research question 3
+- research question 4
+
+By combining multiple perspectives, the dashboard seeks to move beyond simple explanations of success and highlight the complexity of student achievement.
+
+## Row 
+### Interactive Visualization 1
+
+```{r}
+df$Family_Income        <- as.character(df$Family_Income)
+df$Parental_Involvement <- as.character(df$Parental_Involvement)
+df$Access_to_Resources  <- as.character(df$Access_to_Resources)
+
+pi_levels  <- c("High", "Medium", "Low")
+atr_levels <- c("High", "Medium", "Low")
+pi_opts    <- c("All", pi_levels)
+atr_opts   <- c("All", atr_levels)
+
+income_colors <- c(
+  "Low"    = "#EF553B",
+  "Medium" = "#00CC96",
+  "High"   = "#636EFA"
+)
+
+combos <- expand.grid(pi = pi_opts, atr = atr_opts, stringsAsFactors = FALSE)
+
+fig            <- plot_ly()
+visibility_map <- list()
+trace_index    <- 0
+
+for (i in seq_len(nrow(combos))) {
+  pi_val     <- combos$pi[i]
+  atr_val    <- combos$atr[i]
+  is_default <- (pi_val == "All" && atr_val == "All")
+
+  sub <- df
+  if (pi_val  != "All") sub <- sub[sub$Parental_Involvement == pi_val, ]
+  if (atr_val != "All") sub <- sub[sub$Access_to_Resources  == atr_val, ]
+
+  sub$Family_Income <- factor(sub$Family_Income, levels = c("Low", "Medium", "High"))
+
+  for (inc in c("Low", "Medium", "High")) {
+    sub_inc <- sub[sub$Family_Income == inc, ]
+    scores  <- sub_inc$Exam_Score
+
+    # Pre-compute box stats
+    mn  <- round(mean(scores, na.rm = TRUE), 2)
+    q1  <- quantile(scores, 0.25, na.rm = TRUE)
+    med <- median(scores, na.rm = TRUE)
+    q3  <- quantile(scores, 0.75, na.rm = TRUE)
+    iqr <- q3 - q1
+    lo  <- round(min(scores, na.rm = TRUE), 2)
+    hi  <- round(max(scores, na.rm = TRUE), 2)
+
+    hover_text <- paste0(
+      "<b>", inc, " Income</b><br>",
+      "Max: ", hi,  "<br>",
+      "Mean: ", mn, "<br>",
+      "Median: ", med, "<br>",
+      "Min: ", lo
+    )
+
+    fig <- fig %>% add_trace(
+      x              = sub_inc$Family_Income,
+      y              = scores,
+      type           = "box",
+      name           = inc,
+      marker         = list(color = income_colors[[inc]]),
+      line           = list(color = income_colors[[inc]]),
+      fillcolor      = paste0(income_colors[[inc]], "55"),
+      boxpoints      = "outliers",
+      hoverinfo      = "none",          # disable box hover entirely
+      visible        = is_default,
+      legendgroup    = inc,
+      showlegend     = (i == 0),
+      offsetgroup    = inc,
+      alignmentgroup = "fixed"
+    )
+
+    trace_index <- trace_index + 1
+    visibility_map[[length(visibility_map) + 1]] <- list(
+      pi = pi_val, atr = atr_val, trace = trace_index
+    )
+
+    # Invisible scatter point at median — carries the unified tooltip
+    fig <- fig %>% add_trace(
+      x          = inc,
+      y          = med,
+      type       = "scatter",
+      mode       = "markers",
+      name       = inc,
+      legendgroup = inc,
+      showlegend = FALSE,
+      marker     = list(color = "rgba(0,0,0,0)", size = 40),  # fully transparent, large hit area
+      hovertemplate = paste0(
+        "<b>", inc, " Income</b><br>",
+        "Max: ", hi,  "<br>",
+        "Mean: ", mn, "<br>",
+        "Median: ", med, "<br>",
+        "Min: ", lo,
+        "<extra></extra>"
+      ),
+      visible    = is_default
+    )
+
+    trace_index <- trace_index + 1
+    visibility_map[[length(visibility_map) + 1]] <- list(
+      pi = pi_val, atr = atr_val, trace = trace_index
+    )
+    
+    # Outlier points with tooltips
+    outliers <- scores[scores < q1 - 1.5 * iqr | scores > q3 + 1.5 * iqr]
+    if (length(outliers) > 0) {
+      fig <- fig %>% add_trace(
+        x             = rep(inc, length(outliers)),
+        y             = outliers,
+        type          = "scatter",
+        mode          = "markers",
+        name          = inc,
+        legendgroup   = inc,
+        showlegend    = FALSE,
+        marker        = list(color = income_colors[[inc]], size = 6),
+        hoverlabel    = list(bgcolor = "#000000", font = list(color = "#ffffff")),
+        hovertemplate = paste0(
+          "<b>", inc, " Income</b><br>",
+          "Outlier: %{y}<br>",
+          "<extra></extra>"
+        ),
+        visible = is_default
+      )
+
+      trace_index <- trace_index + 1
+      visibility_map[[length(visibility_map) + 1]] <- list(
+        pi = pi_val, atr = atr_val, trace = trace_index
+      )
+    }
+  }
+}
+
+make_vis <- function(sel_pi, sel_atr) {
+  vapply(visibility_map, function(m) m$pi == sel_pi && m$atr == sel_atr, logical(1))
+}
+
+pi_buttons <- lapply(pi_opts, function(pv) {
+  list(method = "update",
+       args   = list(list(visible = as.list(make_vis(pv, "All")))),
+       label  = pv)
+})
+
+atr_buttons <- lapply(atr_opts, function(av) {
+  list(method = "update",
+       args   = list(list(visible = as.list(make_vis("All", av)))),
+       label  = av)
+})
+
+fig <- fig %>%
+  layout(
+    title = list(
+      text    = "Effect of Family Income on Exam Performance",
+      x       = 0.5,
+      xanchor = "center",
+      y       = 0.97,
+      yanchor = "top",
+      font    = list(size = 16)
+    ),
+    xaxis = list(
+      title         = "Family Income",
+      type          = "category",
+      categoryorder = "array",
+      categoryarray = c("Low", "Medium", "High")
+    ),
+    yaxis   = list(title = "Exam Score"),
+    boxmode = "overlay",
+    margin  = list(t = 130, r = 30, b = 60, l = 60),
+
+    updatemenus = list(
+      list(
+        type        = "dropdown",
+        active      = 0,
+        x           = 0.01,
+        xanchor     = "left",
+        y           = 1.10,
+        yanchor     = "top",
+        buttons     = pi_buttons,
+        bgcolor     = "#ffffff",
+        bordercolor = "#aaaaaa",
+        font        = list(size = 12)
+      ),
+      list(
+        type        = "dropdown",
+        active      = 0,
+        x           = 0.13,
+        xanchor     = "left",
+        y           = 1.10,
+        yanchor     = "top",
+        buttons     = atr_buttons,
+        bgcolor     = "#ffffff",
+        bordercolor = "#aaaaaa",
+        font        = list(size = 12)
+      )
+    ),
+
+    annotations = list(
+      list(
+        text      = "<b>Parental Involvement:</b>",
+        x = 0,  xref = "paper", xanchor = "left",
+        y = 1.17, yref = "paper", yanchor = "top",
+        showarrow = FALSE, font = list(size = 12, color = "#333333")
+      ),
+      list(
+        text      = "<b>Access to Resources:</b>",
+        x = 0.12, xref = "paper", xanchor = "left",
+        y = 1.17, yref = "paper", yanchor = "top",
+        showarrow = FALSE, font = list(size = 12, color = "#333333")
+      )
+    )
+  )
+
+fig
+```
+
+### Interactive visualization 2
+
+```{r}
+df <- read.csv("StudentPerformanceFactors.csv")
+#rename columns
+df <- df %>%
+  rename(
+     HoursStudied = Hours_Studied,
+     ExamScore = Exam_Score,
+     Attendance = Attendance
+   )
+
+#filter outliers
+q1_h <- quantile(df$HoursStudied, 0.25, na.rm = TRUE)
+q3_h <- quantile(df$HoursStudied, 0.75, na.rm = TRUE)
+iqr_h <- q3_h - q1_h
+
+q1_s <- quantile(df$ExamScore, 0.25, na.rm = TRUE)
+q3_s <- quantile(df$ExamScore, 0.75, na.rm = TRUE)
+iqr_s <- q3_s - q1_s
+
+df <- df %>%
+  mutate(
+    is_outlier =
+      HoursStudied < q1_h - 1.5 * iqr_h |
+      HoursStudied > q3_h + 1.5 * iqr_h |
+      ExamScore < q1_s - 1.5 * iqr_s |
+      ExamScore > q3_s + 1.5 * iqr_s
+  )
+
+df_main <- df %>% filter(!is_outlier)
+df_out  <- df %>% filter(is_outlier)
+
+
+#fit regression line (without outliers)
+fit_no_outliers <- lm(ExamScore ~ HoursStudied, data = df_main)
+
+slope_no_outliers <- coef(fit_no_outliers)[2]
+intercept_no_outliers <- coef(fit_no_outliers)[1]
+corr_no_outliers <- cor(df_main$HoursStudied, df_main$ExamScore, use = "complete.obs")
+r2_no_outliers <- summary(fit_no_outliers)$r.squared
+
+#regression with all data
+fit_all <- lm(ExamScore ~ HoursStudied, data = df)
+
+slope_all <- coef(fit_all)[2]
+intercept_all <- coef(fit_all)[1]
+corr_all <- cor(df$HoursStudied, df$ExamScore, use = "complete.obs")
+r2_all <- summary(fit_all)$r.squared
+
+
+#Hover text
+df_main <- df_main %>%
+  mutate(
+    point_text = paste0(
+      "Hours Studied: ", HoursStudied,
+      "<br>Exam Score: ", ExamScore,
+      "<br>Attendance: ", Attendance,
+      "<br>Status: Non-outlier"
+    )
+  )
+
+df_out <- df_out %>%
+  mutate(
+    point_text = paste0(
+      "Hours Studied: ", HoursStudied,
+      "<br>Exam Score: ", ExamScore,
+      "<br>Attendance: ", Attendance,
+      "<br>Status: Outlier"
+    )
+  )
+
+#predicted x values for the regression line
+x_seq <- seq(
+  min(df_main$HoursStudied, na.rm = TRUE),
+  max(df_main$HoursStudied, na.rm = TRUE),
+  length.out = 200
+)
+#line without outliers
+line_no_out <- data.frame(
+  HoursStudied = x_seq,
+  ExamScore = predict(fit_no_outliers, newdata = data.frame(HoursStudied = x_seq))
+)
+
+line_text_no_out <- paste0(
+  "Trend line (no outliers)",
+  "<br>Slope: ", round(slope_no_outliers, 3),
+  "<br>Intercept: ", round(intercept_no_outliers, 3),
+  "<br>Correlation (r): ", round(corr_no_outliers, 3),
+  "<br>R²: ", round(r2_no_outliers, 3)
+)
+
+#line with all data
+line_all <- data.frame(
+  HoursStudied = x_seq,
+  ExamScore = predict(fit_all, newdata = data.frame(HoursStudied = x_seq))
+)
+
+line_text_all <- paste0(
+  "Trend line (with outliers)",
+  "<br>Slope: ", round(slope_all, 3),
+  "<br>Intercept: ", round(intercept_all, 3),
+  "<br>Correlation (r): ", round(corr_all, 3),
+  "<br>R²: ", round(r2_all, 3)
+)
+
+p <- plot_ly()
+
+# main data: always visible
+p <- p %>%
+  add_markers(
+    data = df_main,
+    x = ~HoursStudied,
+    y = ~ExamScore,
+    marker = list(
+      color = ~Attendance,
+      coloraxis = "coloraxis",
+      symbol = "circle",
+      size = 8
+    ),
+    text = ~point_text,
+    hoverinfo = "text",
+    name = "Data (no outliers)",
+    showlegend = FALSE
+  )
+
+# outliers: toggleable
+p <- p %>%
+  add_markers(
+    data = df_out,
+    x = ~HoursStudied,
+    y = ~ExamScore,
+    marker = list(
+      color = ~Attendance,
+      coloraxis = "coloraxis",
+      symbol = "circle",
+      size = 8
+    ),
+    text = ~point_text,
+    hoverinfo = "text",
+    name = "Outliers",
+    legendgroup = "with_outliers",
+    visible = "legendonly",
+    showlegend = TRUE
+  )
+
+# trend line without outliers: always visible
+p <- p %>%
+  add_lines(
+    data = line_no_out,
+    x = ~HoursStudied,
+    y = ~ExamScore,
+    text = line_text_no_out,
+    hoverinfo = "text",
+    line = list(color = "black", width = 2),
+    name = "Trend line (no outliers)",
+    showlegend = FALSE
+  )
+
+# trend line with outliers: toggles with outliers
+p <- p %>%
+  add_lines(
+    data = line_all,
+    x = ~HoursStudied,
+    y = ~ExamScore,
+    text = line_text_all,
+    hoverinfo = "text",
+    line = list(color = "red", width = 2, dash = "dash"),
+    name = "Trend line (with outliers)",
+    legendgroup = "with_outliers",
+    visible = "legendonly",
+    showlegend = FALSE
+  )
+
+p %>%
+  layout(
+    title = "Impact of Study Time on Exam Performance and the Role of Attendance",
+    xaxis = list(title = "Hours Studied"),
+    yaxis = list(title = "Exam Score"),
+    dragmode = "zoom",
+    showlegend = TRUE,
+    coloraxis = list(
+      colorscale = list(
+        c(0, "yellow"),
+        c(1, "darkgreen")
+      ),
+      colorbar = list(
+        title = "Attendance",
+        x = 1.02,
+        len = 0.75
+      )
+    ),
+    legend = list(
+      title = list(text = "Click to toggle"),
+      groupclick = "togglegroup",
+      x = 1.18,
+      y = 0.85
+    )
+  ) %>%
+  config(
+    displayModeBar = TRUE,
+    scrollZoom = TRUE
+  )
+```
+
+## Rows
+### Interactive Visualization 3
+```{r}
+df <- read.csv("StudentPerformanceFactors.csv")
+p <- ggplot(df, aes(x = Sleep_Hours, y = Exam_Score)) +
+  geom_jitter(alpha = 0.08, color = "#3B5998", width = 0.25, height = 0.5, size = 1) +
+  geom_smooth(aes(color = "Regression Line"), method = "lm", se = TRUE, linewidth = 1.2) +
+  scale_color_manual(values = "red", name = "") +
+  stat_summary(fun = mean, geom = "point", shape = 18, size = 4, color = "red") +
+  scale_y_continuous(limits = c(55, 85), breaks = seq(55, 85, 5)) +
+  scale_x_continuous(breaks = 4:10) +
+  labs(
+    title = "Sleep Hours vs. Exam Score",
+    subtitle = "Red line = line of best fit (linear regression). Diamonds = group averages.",
+    caption = "The nearly flat regression line indicates little to no relationship between sleep hours and exam scores.",
+    x = "Sleep Hours per Night",
+    y = "Exam Score (0–100)"
+  ) +
+  theme_minimal(base_size = 13)
+pl <- ggplotly(p)
+for (i in seq_along(pl$x$data)) {
+  nm <- pl$x$data[[i]]$name
+  if (!is.null(nm) && grepl("Regression Line", nm)) {
+    pl$x$data[[i]]$visible <- "legendonly"
+  }
+}
+pl
+```
+
+### Interactive Visualization 4
+```{r}
+students <- read.csv("StudentPerformanceFactors.csv")
+avg_study_overall <- mean(students$Hours_Studied, na.rm = TRUE)
+avg_sleep_overall <- mean(students$Sleep_Hours, na.rm = TRUE)
+avg_score_overall <- mean(students$Exam_Score, na.rm = TRUE)
+
+profile_stats <- students %>%
+  mutate(
+    is_athlete = ifelse(Physical_Activity >= 4, "Athlete", "Non-Athlete"),
+    profile_name = paste(is_athlete, ifelse(Extracurricular_Activities == "Yes", "\nWith Extracurriculars", "\nNo Extracurriculars"))
+  ) %>%
+  group_by(profile_name) %>%
+  summarize(
+    study_hrs = round(mean(Hours_Studied, na.rm = TRUE), 1),
+    sleep_hrs = round(mean(Sleep_Hours, na.rm = TRUE), 1),
+    exam_score = round(mean(Exam_Score, na.rm = TRUE), 1),
+    .groups = 'drop'
+  )
+
+sort_study_high <- profile_stats %>% arrange(desc(study_hrs)) %>% pull(profile_name)
+sort_study_low  <- profile_stats %>% arrange(study_hrs) %>% pull(profile_name)
+sort_sleep_high <- profile_stats %>% arrange(desc(sleep_hrs)) %>% pull(profile_name)
+sort_sleep_low  <- profile_stats %>% arrange(sleep_hrs) %>% pull(profile_name)
+sort_score_high <- profile_stats %>% arrange(desc(exam_score)) %>% pull(profile_name)
+sort_score_low  <- profile_stats %>% arrange(exam_score) %>% pull(profile_name)
+
+baseline_note <- list(
+  text = paste0(
+    "<b>Global Averages</b><br>",
+    "Study: ", round(avg_study_overall, 1), " hrs<br>",
+    "Sleep: ", round(avg_sleep_overall, 1), " hrs<br>",
+    "Score: ", round(avg_score_overall, 1)
+  ),
+  xref = "paper", yref = "paper",
+  x = 0, y = 1.25,
+  xanchor = "left", yanchor = "top",
+  showarrow = FALSE,
+  align = "left",
+  bgcolor = "#f8f9fa",
+  bordercolor = "#232D4B",
+  borderwidth = 1,
+  borderpad = 6,
+  font = list(size = 11, color = "#232D4B")
+)
+
+metric_toggle_buttons <- list(
+  type = "buttons",
+  direction = "right",
+  y = 1.25, x = 0.45,
+  xanchor = "center", yanchor = "top",
+  showactive = TRUE,
+  buttons = list(
+    list(
+      method = "update",
+      args = list(
+        list(visible = c(TRUE, TRUE, FALSE)),
+        list(yaxis = list(title = "Average Hours", gridcolor = "#e5e5e5"))
+      ),
+      label = "Compare Time"
+    ),
+    list(
+      method = "update",
+      args = list(
+        list(visible = c(FALSE, FALSE, TRUE)),
+        list(yaxis = list(title = "Average Exam Score", gridcolor = "#e5e5e5"))
+      ),
+      label = "View Exam Scores"
+    )
+  )
+)
+
+sorting_dropdown <- list(
+  type = "dropdown",
+  direction = "down",
+  y = 1.25, x = 1,
+  xanchor = "right", yanchor = "top",
+  showactive = TRUE,
+  buttons = list(
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_study_high)), label = "Sort: Study (High to Low)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_study_low)), label = "Sort: Study (Low to High)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_sleep_high)), label = "Sort: Sleep (High to Low)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_sleep_low)), label = "Sort: Sleep (Low to High)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_score_high)), label = "Sort: Score (High to Low)"),
+    list(method = "relayout", args = list(list("xaxis.categoryorder" = "array", "xaxis.categoryarray" = sort_score_low)), label = "Sort: Score (Low to High)")
+  )
+)
+
+student_plot <- plot_ly(profile_stats, x = ~profile_name)
+
+student_plot <- student_plot %>%
+  add_bars(
+    y = ~study_hrs,
+    name = "Study Hours",
+    marker = list(color = "#232D4B"),
+    hovertemplate = "<b>%{x}</b><br>Study: %{y} hrs<extra></extra>",
+    visible = TRUE
+  ) %>%
+  add_bars(
+    y = ~sleep_hrs,
+    name = "Sleep Hours",
+    marker = list(color = "#E57200"),
+    hovertemplate = "<b>%{x}</b><br>Sleep: %{y} hrs<extra></extra>",
+    visible = TRUE
+  ) %>%
+  add_bars(
+    y = ~exam_score,
+    name = "Exam Score",
+    marker = list(color = "#5C7F92"),
+    hovertemplate = "<b>%{x}</b><br>Exam Score: %{y}<extra></extra>",
+    visible = FALSE
+  )
+
+student_plot <- student_plot %>% layout(
+  title = list(text = "<b>Time Allocation & Exam Performance by Lifestyle</b>", font = list(size = 18, color = "#232D4B"), y = 0.98),
+  margin = list(t = 140),
+  xaxis = list(title = "", tickangle = 0, tickfont = list(size = 12), categoryorder = "array", categoryarray = sort_study_high),
+  yaxis = list(title = "Average Hours", gridcolor = "#e5e5e5"),
+  barmode = 'group',
+  paper_bgcolor = "white",
+  plot_bgcolor = "white",
+  annotations = list(baseline_note),
+  legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.15),
+  updatemenus = list(metric_toggle_buttons, sorting_dropdown)
+)
+
+student_plot
+```
+
+
+
+
+
