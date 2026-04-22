@@ -109,11 +109,12 @@ sorting_dropdown <- list(
 final_plot <- subplot(time_plot, score_plot, nrows = 1, margin = 0.05, titleX = FALSE, titleY = TRUE) %>%
   layout(
     title = list(
-      text = "<b>Impact of Athletics and Extracurriculars on Habits and Performance</b>",
-      font = list(size = 18, color = "#232D4B"),
+      text = "<b>Impact of Athletics & Extracurriculars<br>on Habits and Performance</b>",
+      font = list(size = 16, color = "#232D4B"),
       x = 0.5,
       xanchor = "center",
-      y = 0.98,
+      y = 0.93,               # Lowered from 0.98 to push the title down
+      yanchor = "top",        # Forces the text to expand downwards from the y-coordinate
       yref = "container"
     ),
     annotations = list(
@@ -121,7 +122,7 @@ final_plot <- subplot(time_plot, score_plot, nrows = 1, margin = 0.05, titleX = 
       list(x = 0.76, y = 1.02, text = "<b>Exam Scores</b>", showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 14), xanchor = "center", yanchor = "bottom")
     ),
     legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.35),
-    margin = list(t = 120, b = 120),
+    margin = list(t = 130, b = 120), # Increased top margin slightly (t = 130) to make room for the second title line
     paper_bgcolor = "white",
     plot_bgcolor = "white",
     barmode = 'group',
