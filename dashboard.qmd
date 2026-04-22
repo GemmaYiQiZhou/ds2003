@@ -20,20 +20,13 @@ df <- read.csv("StudentPerformanceFactors.csv")
 
 ## Row
 
-### Project Overview
-This dashboard explores the Student Performance Factors dataset from Kaggle, which contains information about students' academic performance and the personal and social-economical factors that may influence their Exam_Score.
-The dataset includes variables such as:
-Academic behavior: Hours_Studied, Attendance, Previous_Scores, Tutoring_Sessions
-Personal/lifestyle factors: Sleep_Hours, Physical_Activity, Motivation_Level
-Family and home context: Family_Income, Parental_Involvement, Parental_Education_Level, Internet_Access
-School context: Teacher_Quality, School_Type, Access_to_Resources
-Outcome variable: Exam_Score
+### Project Overview {width=100%}
+This dashboard explores the *Student Performance Factors* dataset from Kaggle, which contains information about students' academic performance and the personal and social-economical factors that may influence their exam score.
+The dataset captures multiple dimensions of student experience. These include study behaviors (such as hours studied and attendance), lifestyle patterns (including sleep and physical activity), family background (such as income and parental involvement), and school-related conditions (like teacher quality and access to resources). Together, these variables provide a more holistic view of the factors that may influence academic outcomes, with **Exam_Score** as the primary measure of performance.
 
-### Project Goals
-The goal of this project is to understand which factors appear most associated with student academic performance and to identify patterns that may help explain differences in exam results. Student success is influenced by more than intelligence alone. By exploring academic, social, and environmental factors together, this dashboard helps highlight which conditions may support stronger student outcomes.
 
 ## Row
-## Static insight
+### Static insight: Distribution of Exam Scores {width=50%}
 ```{r}
 ggplot(df, aes(x = Exam_Score)) +
   geom_histogram(bins = 25, fill = "#2C7FB8", color = "white") +
@@ -44,13 +37,44 @@ ggplot(df, aes(x = Exam_Score)) +
   ) +
   theme_minimal(base_size = 13)
 ```
+The distribution of exam scores provides a baseline view of student performance. Most students cluster within a central range, rather than at the extremes, suggesting that differences in performance are systematic rather than random. This motivates further exploration into which factors may explain this variation.
 
+### Static insight {width=50%}
+```{r}
+motivation_summary <- df %>%
+  group_by(Motivation_Level) %>%
+  summarise(avg_score = mean(Exam_Score, na.rm = TRUE), .groups = "drop")
+
+ggplot(motivation_summary, aes(x = Motivation_Level, y = avg_score, fill = Motivation_Level)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = round(avg_score, 1)), vjust = -0.4) +
+  labs(
+    title = "Average Exam Score by Motivation Level",
+    x = "Motivation Level",
+    y = "Average Exam Score"
+  ) +
+  theme_minimal(base_size = 13)
+```
+Average exam scores do not vary dramatically across motivation levels. While students with higher motivation show slightly better performance, the differences are relatively small. This suggests that motivation alone may not be a strong explanatory factor, and that other variables—such as study habits or external support—may play a more significant role.
+
+## Row
+### Project Goals {width=100%}
+
+The goal of this project is to explore how different aspects of a student’s environment and behavior are associated with exam performance, and to identify which factors appear most influential.
+
+More specifically, this dashboard aims to:
+
+- Examine whether **academic habits** (such as hours studied and attendance) are strong predictors of performance  
+- Investigate the impact of **support systems**, including parental involvement and access to resources  
+- research question 3
+- research question 4
+
+By combining multiple perspectives, the dashboard seeks to move beyond simple explanations of success and highlight the complexity of student achievement.
 
 ## Row 
 ### Interactive Visualization 1
 
 ```{r}
-#| title: "U.S. Unemployment Over Time"
 df$Family_Income        <- as.character(df$Family_Income)
 df$Parental_Involvement <- as.character(df$Parental_Involvement)
 df$Access_to_Resources  <- as.character(df$Access_to_Resources)
@@ -266,7 +290,7 @@ fig
 ### Interactive visualization 2
 
 ```{r}
-#| title: "U.S. Unemployment Over the last decade in the data"
+df <- read.csv("StudentPerformanceFactors.csv")
 #rename columns
 df <- df %>%
   rename(
