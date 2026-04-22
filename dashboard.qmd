@@ -24,7 +24,7 @@ df <- read.csv("StudentPerformanceFactors.csv")
 ```
 
 # Overview 
-## Row
+## Row {height= 270}
 ### Project Overview {width=50%}
 ::: {.card title="Project Overview"}
 This dashboard explores the *Student Performance Factors* dataset from Kaggle, which contains information about students' academic performance and the personal and social-economical factors that may influence their exam score.
@@ -34,10 +34,14 @@ The dataset captures multiple dimensions of student experience. These include st
 ### Research Questions
 ::: {.card title="Research Questions"}
 More specifically, this dashboard aims to:
-- Examine whether **academic habits** (such as hours studied and attendance) are strong predictors of performance  
+
 - Investigate the impact of **support systems**, including parental involvement and access to resources  
-- research question 3
-- research question 4
+
+- Examine whether **academic habits** (such as hours studied and attendance) are strong predictors of performance  
+
+- Explore how **lifestyle habits** (such as sleep duration) differentiate the hihest and lowest-performing students
+
+- Assess how **extracurricular involvement** (like athletics and clubs) impacts a student's allocation of sleep and study time
 :::
 
 
@@ -84,7 +88,7 @@ ggplot(motivation_summary, aes(x = Motivation_Level, y = avg_score, fill = Motiv
 ```
 
 
-## Row
+## Row {height=220}
 ### What the Distribution Shows
 ::: {.card title="What the Distribution Shows"}
 The distribution of exam scores provides a baseline view of student performance. Most students cluster within a central range, rather than at the extremes, suggesting that differences in performance are systematic rather than random. This motivates further exploration into which factors may explain this variation.
@@ -92,11 +96,11 @@ The distribution of exam scores provides a baseline view of student performance.
 
 ### What the Motivation Chart Shows
 ::: {.card title="What the Motivation Chart Shows"}
-Average exam scores do not vary dramatically across motivation levels. While students with higher motivation show slightly better performance, the differences are relatively small. This suggests that motivation alone may not be a strong explanatory factor, and that other variables—such as study habits or external support—may play a more significant role.
+Average exam scores do not vary dramatically across motivation levels. While students with higher motivation show slightly better performance, the differences are relatively small. This suggests that motivation alone may not be a strong explanatory factor, and that other variables (such as study habits or external support) may play a more significant role.
 :::
 
 ## Row
-### Project Goals
+### Project Goals {height= 50}
 ::: {.card title="Project Goals"}
 By combining multiple perspectives, the dashboard seeks to move beyond simple explanations of success and highlight the complexity of student achievement.
 The goal of this project is to explore how different aspects of a student’s environment and behavior are associated with exam performance, and to identify which factors appear most influential.
@@ -327,15 +331,16 @@ fig
 
 ```{r}
 df <- read.csv("StudentPerformanceFactors.csv")
-#rename columns
+
+# rename columns
 df <- df %>%
   rename(
-     HoursStudied = Hours_Studied,
-     ExamScore = Exam_Score,
-     Attendance = Attendance
-   )
+    HoursStudied = Hours_Studied,
+    ExamScore = Exam_Score,
+    Attendance = Attendance
+  )
 
-#filter outliers
+# filter outliers
 q1_h <- quantile(df$HoursStudied, 0.25, na.rm = TRUE)
 q3_h <- quantile(df$HoursStudied, 0.75, na.rm = TRUE)
 iqr_h <- q3_h - q1_h
@@ -356,8 +361,7 @@ df <- df %>%
 df_main <- df %>% filter(!is_outlier)
 df_out  <- df %>% filter(is_outlier)
 
-
-#fit regression line (without outliers)
+# fit regression line (without outliers)
 fit_no_outliers <- lm(ExamScore ~ HoursStudied, data = df_main)
 
 slope_no_outliers <- coef(fit_no_outliers)[2]
@@ -365,7 +369,7 @@ intercept_no_outliers <- coef(fit_no_outliers)[1]
 corr_no_outliers <- cor(df_main$HoursStudied, df_main$ExamScore, use = "complete.obs")
 r2_no_outliers <- summary(fit_no_outliers)$r.squared
 
-#regression with all data
+# regression with all data
 fit_all <- lm(ExamScore ~ HoursStudied, data = df)
 
 slope_all <- coef(fit_all)[2]
@@ -373,8 +377,7 @@ intercept_all <- coef(fit_all)[1]
 corr_all <- cor(df$HoursStudied, df$ExamScore, use = "complete.obs")
 r2_all <- summary(fit_all)$r.squared
 
-
-#Hover text
+# hover text
 df_main <- df_main %>%
   mutate(
     point_text = paste0(
@@ -395,13 +398,14 @@ df_out <- df_out %>%
     )
   )
 
-#predicted x values for the regression line
+# predicted x values for regression lines
 x_seq <- seq(
-  min(df_main$HoursStudied, na.rm = TRUE),
-  max(df_main$HoursStudied, na.rm = TRUE),
+  min(df$HoursStudied, na.rm = TRUE),
+  max(df$HoursStudied, na.rm = TRUE),
   length.out = 200
 )
-#line without outliers
+
+# line without outliers
 line_no_out <- data.frame(
   HoursStudied = x_seq,
   ExamScore = predict(fit_no_outliers, newdata = data.frame(HoursStudied = x_seq))
@@ -415,7 +419,7 @@ line_text_no_out <- paste0(
   "<br>R²: ", round(r2_no_outliers, 3)
 )
 
-#line with all data
+# line with all data
 line_all <- data.frame(
   HoursStudied = x_seq,
   ExamScore = predict(fit_all, newdata = data.frame(HoursStudied = x_seq))
@@ -431,43 +435,117 @@ line_text_all <- paste0(
 
 p <- plot_ly()
 
-# main data: always visible
+# -----------------------------
+# DEFAULT VIEW: plain green
+# -----------------------------
+
+# main data, green, visible by default
 p <- p %>%
   add_markers(
     data = df_main,
     x = ~HoursStudied,
     y = ~ExamScore,
     marker = list(
-      color = ~Attendance,
-      coloraxis = "coloraxis",
+      color = "forestgreen",
       symbol = "circle",
       size = 8
     ),
     text = ~point_text,
     hoverinfo = "text",
-    name = "Data (no outliers)",
-    showlegend = FALSE
+    name = "Students",
+    legendgroup = "plain_points",
+    showlegend = FALSE,
+    visible = TRUE
   )
 
-# outliers: toggleable
+# outliers, green, hidden by default
 p <- p %>%
   add_markers(
     data = df_out,
     x = ~HoursStudied,
     y = ~ExamScore,
     marker = list(
-      color = ~Attendance,
-      coloraxis = "coloraxis",
+      color = "forestgreen",
       symbol = "circle",
       size = 8
     ),
     text = ~point_text,
     hoverinfo = "text",
     name = "Outliers",
-    legendgroup = "with_outliers",
+    legendgroup = "with_outliers_plain",
     visible = "legendonly",
     showlegend = TRUE
   )
+
+# -----------------------------
+# ATTENDANCE-COLORED VIEW
+# -----------------------------
+
+# main data colored by attendance, hidden by default
+p <- p %>%
+  add_markers(
+    data = df_main,
+    x = ~HoursStudied,
+    y = ~ExamScore,
+    marker = list(
+  color = ~Attendance,
+  colorscale = list(
+    c(0, "yellow"),
+    c(1, "darkgreen")
+  ),
+  cmin = min(df$Attendance, na.rm = TRUE),
+  cmax = max(df$Attendance, na.rm = TRUE),
+  showscale = TRUE,
+  colorbar = list(
+    title = "Attendance",
+    x = 1.02,
+    len = 0.75
+  ),
+  symbol = "circle",
+  size = 8
+),
+    text = ~point_text,
+    hoverinfo = "text",
+    name = "Color by Attendance",
+    legendgroup = "attendance_colored",
+    visible = "legendonly",
+    showlegend = TRUE
+  )
+
+# outliers colored by attendance, hidden by default
+p <- p %>%
+  add_markers(
+    data = df_out,
+    x = ~HoursStudied,
+    y = ~ExamScore,
+    marker = list(
+  color = ~Attendance,
+  colorscale = list(
+    c(0, "yellow"),
+    c(1, "darkgreen")
+  ),
+  cmin = min(df$Attendance, na.rm = TRUE),
+  cmax = max(df$Attendance, na.rm = TRUE),
+  showscale = FALSE,
+  colorbar = list(
+    title = "Attendance",
+    x = 1.02,
+    len = 0.75
+  ),
+  symbol = "circle",
+  size = 8
+),
+    text = ~point_text,
+    hoverinfo = "text",
+    name = "Attendance-colored outliers",
+    legendgroup = "attendance_colored_outliers",
+    visible = FALSE,
+    showlegend = FALSE
+  )
+
+# -----------------------------
+# TREND LINES
+# -----------------------------
 
 # trend line without outliers: always visible
 p <- p %>%
@@ -482,7 +560,7 @@ p <- p %>%
     showlegend = FALSE
   )
 
-# trend line with outliers: toggles with outliers
+# trend line with outliers: toggleable
 p <- p %>%
   add_lines(
     data = line_all,
@@ -492,7 +570,7 @@ p <- p %>%
     hoverinfo = "text",
     line = list(color = "red", width = 2, dash = "dash"),
     name = "Trend line (with outliers)",
-    legendgroup = "with_outliers",
+    legendgroup = "with_outliers_plain",
     visible = "legendonly",
     showlegend = FALSE
   )
@@ -503,18 +581,6 @@ p %>%
     xaxis = list(title = "Hours Studied"),
     yaxis = list(title = "Exam Score"),
     dragmode = "zoom",
-    showlegend = TRUE,
-    coloraxis = list(
-      colorscale = list(
-        c(0, "yellow"),
-        c(1, "darkgreen")
-      ),
-      colorbar = list(
-        title = "Attendance",
-        x = 1.02,
-        len = 0.75
-      )
-    ),
     legend = list(
       title = list(text = "Click to toggle"),
       groupclick = "togglegroup",
@@ -531,12 +597,22 @@ p %>%
 ## Rows
 ### Interactive Visualization 3
 ```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
 df <- read.csv("StudentPerformanceFactors.csv")
+df <- df[df$Distance_from_Home %in% c("Near", "Moderate", "Far"), ]
+df <- rbind(
+  df[df$Distance_from_Home != "Near", ],
+  df[df$Distance_from_Home == "Near", ][sample(1:3884, 1000), ]
+)
+# Took a sample of the near students because it was overwhelmingly more students on the chart.
 p <- ggplot(df, aes(x = Sleep_Hours, y = Exam_Score)) +
-  geom_jitter(alpha = 0.08, color = "#3B5998", width = 0.25, height = 0.5, size = 1) +
+  geom_jitter(aes(color = Distance_from_Home), alpha = 0.4, width = 0.25, height = 0.5, size = 1) +
   geom_smooth(aes(color = "Regression Line"), method = "lm", se = TRUE, linewidth = 1.2) +
-  scale_color_manual(values = "red", name = "") +
-  stat_summary(fun = mean, geom = "point", shape = 18, size = 4, color = "red") +
+  scale_color_manual(values = c("Near" = "#4CAF50", "Moderate" = "#FFC107", "Far" = "#F44336", "Regression Line" = "red"), name = "Distance from School") +
+  stat_summary(fun = mean, geom = "point", shape = 18, size = 4, color = "red", show.legend = FALSE) +
   scale_y_continuous(limits = c(55, 85), breaks = seq(55, 85, 5)) +
   scale_x_continuous(breaks = 4:10) +
   labs(
@@ -559,9 +635,6 @@ pl
 
 ### Interactive Visualization 4
 ```{r}
-library(dplyr)
-library(plotly)
-
 students <- read.csv("StudentPerformanceFactors.csv")
 
 profile_stats <- students %>%
@@ -658,11 +731,12 @@ sorting_dropdown <- list(
 final_plot <- subplot(time_plot, score_plot, nrows = 1, margin = 0.05, titleX = FALSE, titleY = TRUE) %>%
   layout(
     title = list(
-      text = "<b>Impact of Athletics and Extracurriculars on Habits and Performance</b>",
-      font = list(size = 18, color = "#232D4B"),
+      text = "<b>Impact of Athletics & Extracurriculars<br>on Habits and Performance</b>",
+      font = list(size = 16, color = "#232D4B"),
       x = 0.5,
       xanchor = "center",
-      y = 0.98,
+      y = 0.93,               # Lowered from 0.98 to push the title down
+      yanchor = "top",        # Forces the text to expand downwards from the y-coordinate
       yref = "container"
     ),
     annotations = list(
@@ -670,7 +744,7 @@ final_plot <- subplot(time_plot, score_plot, nrows = 1, margin = 0.05, titleX = 
       list(x = 0.76, y = 1.02, text = "<b>Exam Scores</b>", showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 14), xanchor = "center", yanchor = "bottom")
     ),
     legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.35),
-    margin = list(t = 120, b = 120),
+    margin = list(t = 130, b = 120), # Increased top margin slightly (t = 130) to make room for the second title line
     paper_bgcolor = "white",
     plot_bgcolor = "white",
     barmode = 'group',
