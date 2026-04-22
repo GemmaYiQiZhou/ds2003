@@ -22,14 +22,20 @@ library(ggplot2)
 df <- read.csv("StudentPerformanceFactors.csv")
 ```
 
+# Overview 
 ## Row
-
 ### Project Overview {width=50%}
 This dashboard explores the *Student Performance Factors* dataset from Kaggle, which contains information about students' academic performance and the personal and social-economical factors that may influence their exam score.
 The dataset captures multiple dimensions of student experience. These include study behaviors (such as hours studied and attendance), lifestyle patterns (including sleep and physical activity), family background (such as income and parental involvement), and school-related conditions (like teacher quality and access to resources). Together, these variables provide a more holistic view of the factors that may influence academic outcomes, with **Exam_Score** as the primary measure of performance.
 
-### Project Goals
-The goal of this project is to explore how different aspects of a student’s environment and behavior are associated with exam performance, and to identify which factors appear most influential.
+### Questions
+More specifically, this dashboard aims to:
+- Examine whether **academic habits** (such as hours studied and attendance) are strong predictors of performance  
+- Investigate the impact of **support systems**, including parental involvement and access to resources  
+- research question 3
+- research question 4
+
+
 
 ## Row {height=420}
 ### Static insight: Distribution of Exam Scores {width=50%}
@@ -52,9 +58,19 @@ motivation_summary <- df %>%
   group_by(Motivation_Level) %>%
   summarise(avg_score = mean(Exam_Score, na.rm = TRUE), .groups = "drop")
 
+motivation_summary$Motivation_Level <- factor(
+  motivation_summary$Motivation_Level,
+  levels = c("Low", "Medium", "High")
+)
+
 ggplot(motivation_summary, aes(x = Motivation_Level, y = avg_score, fill = Motivation_Level)) +
   geom_col(show.legend = FALSE) +
   geom_text(aes(label = round(avg_score, 1)), vjust = -0.4) +
+  scale_fill_manual(values = c(
+    "Low" = "red",
+    "Medium" = "blue",
+    "High" = "green"
+  )) +
   labs(
     title = "Average Exam Score by Motivation Level",
     x = "Motivation Level",
@@ -62,20 +78,22 @@ ggplot(motivation_summary, aes(x = Motivation_Level, y = avg_score, fill = Motiv
   ) +
   theme_minimal(base_size = 13)
 ```
+
+
 ## Row
-### What these charts show
+### Distribution
 The distribution of exam scores provides a baseline view of student performance. Most students cluster within a central range, rather than at the extremes, suggesting that differences in performance are systematic rather than random. This motivates further exploration into which factors may explain this variation.
+
+### Motivation
 Average exam scores do not vary dramatically across motivation levels. While students with higher motivation show slightly better performance, the differences are relatively small. This suggests that motivation alone may not be a strong explanatory factor, and that other variables—such as study habits or external support—may play a more significant role.
 
-More specifically, this dashboard aims to:
-
-- Examine whether **academic habits** (such as hours studied and attendance) are strong predictors of performance  
-- Investigate the impact of **support systems**, including parental involvement and access to resources  
-- research question 3
-- research question 4
-
+## Row
+### Project Goals
 By combining multiple perspectives, the dashboard seeks to move beyond simple explanations of success and highlight the complexity of student achievement.
+The goal of this project is to explore how different aspects of a student’s environment and behavior are associated with exam performance, and to identify which factors appear most influential.
 
+
+# Interactive Analysis
 ## Row 
 ### Interactive Visualization 1
 
