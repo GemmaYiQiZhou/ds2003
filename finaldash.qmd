@@ -473,7 +473,7 @@ p <- p %>%
     data = df_main,
     x = ~HoursStudied,
     y = ~ExamScore,
-    marker = list(color = color_base, symbol = "circle", size = 8),
+    marker = list(color = color_high, symbol = "circle", size = 8),
     text = ~point_text,
     hoverinfo = "text",
     name = "Students",
@@ -487,7 +487,9 @@ p <- p %>%
     data = df_out,
     x = ~HoursStudied,
     y = ~ExamScore,
-    marker = list(color = color_base, symbol = "circle", size = 8),
+    marker = list(color = color_high,
+                  
+      symbol = "circle", size = 8),
     text = ~point_text,
     hoverinfo = "text",
     name = "Outliers",
@@ -536,8 +538,8 @@ p <- p %>%
     text = ~point_text,
     hoverinfo = "text",
     name = "Attendance-colored outliers",
-    legendgroup = "attendance_colored_outliers",
-    visible = FALSE,
+    legendgroup = "attendance_colored",
+    visible = "legendonly",
     showlegend = FALSE
   )
 
