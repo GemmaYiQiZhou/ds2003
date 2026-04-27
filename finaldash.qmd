@@ -21,6 +21,12 @@ library(ggplot2)
 
 #Load data
 df <- read.csv("StudentPerformanceFactors.csv")
+
+# color palette
+color_high <- "#18BC9C"
+color_med  <- "#F39C12"
+color_low  <- "#E74C3C"
+color_base <- "#2C3E50"
 ```
 
 # Overview 
@@ -47,7 +53,7 @@ More specifically, this dashboard aims to:
 ### Static insight: Distribution of Exam Scores {width=50%}
 ```{r}
 ggplot(df, aes(x = Exam_Score)) +
-  geom_histogram(bins = 25, fill = "#5C7F92", color = "white") +
+  geom_histogram(bins = 25, fill = color_base, color = "white") +
   labs(
     title = "Distribution of Exam Scores",
     subtitle = "Scores are roughly normally distributed, centered around 65-70.",
@@ -73,9 +79,9 @@ ggplot(motivation_summary, aes(x = Motivation_Level, y = avg_score, fill = Motiv
   geom_col(show.legend = FALSE) +
   geom_text(aes(label = round(avg_score, 1)), vjust = -0.4) +
   scale_fill_manual(values = c(
-    "Low" = "red",
-    "Medium" = "blue",
-    "High" = "green"
+    "Low" = color_low,
+    "Medium" = color_med,
+    "High" = color_high
   )) +
   labs(
     title = "Average Exam Score by Motivation Level",
@@ -107,6 +113,17 @@ The goal of this project is to explore how different aspects of a student's envi
 :::
 
 # Interactive Analysis
+::: {.card title="Dashboard Navigation Guide" fill="false"}
+
+Academic success isn't driven by a single metric. To uncover what truly impacts exam scores, this dashboard is structured to guide you through four distinct layers of a student's life:
+
+1. **Foundation (Family & Support):** Does economic advantage matter, or can parental involvement bridge the gap?
+2. **Academic Input (Study & Attendance):** How do raw study hours translate to grades when class attendance fluctuates?
+3. **Recovery (Sleep & Proximity):** Is sleep the ultimate performance booster, or does commute time interfere?
+4. **Time Management (Athletics & Clubs):** Do heavily involved students suffer academically, or are they better time managers?
+
+Follow the charts below to explore how these layers interact. View the "Key Insights" on the right side of each chart for guidance on interactivity and takeaways.
+:::
 
 ## Row {height=500}
 
@@ -123,9 +140,9 @@ pi_opts    <- c("All", pi_levels)
 atr_opts   <- c("All", atr_levels)
 
 income_colors <- c(
-  "Low"    = "#EF553B",
-  "Medium" = "#00CC96",
-  "High"   = "#636EFA"
+  "Low" = color_low, 
+  "Medium" = color_med, 
+  "High" = color_high
 )
 
 combos <- expand.grid(pi = pi_opts, atr = atr_opts, stringsAsFactors = FALSE)
@@ -456,7 +473,7 @@ p <- p %>%
     data = df_main,
     x = ~HoursStudied,
     y = ~ExamScore,
-    marker = list(color = "forestgreen", symbol = "circle", size = 8),
+    marker = list(color = color_base, symbol = "circle", size = 8),
     text = ~point_text,
     hoverinfo = "text",
     name = "Students",
@@ -470,7 +487,7 @@ p <- p %>%
     data = df_out,
     x = ~HoursStudied,
     y = ~ExamScore,
-    marker = list(color = "forestgreen", symbol = "circle", size = 8),
+    marker = list(color = color_base, symbol = "circle", size = 8),
     text = ~point_text,
     hoverinfo = "text",
     name = "Outliers",
@@ -486,7 +503,7 @@ p <- p %>%
     y = ~ExamScore,
     marker = list(
       color = ~Attendance,
-      colorscale = list(c(0, "yellow"), c(1, "darkgreen")),
+      colorscale = list(c(0, color_low), c(1, color_high)),
       cmin = min(df$Attendance, na.rm = TRUE),
       cmax = max(df$Attendance, na.rm = TRUE),
       showscale = TRUE,
@@ -509,7 +526,7 @@ p <- p %>%
     y = ~ExamScore,
     marker = list(
       color = ~Attendance,
-      colorscale = list(c(0, "yellow"), c(1, "darkgreen")),
+      colorscale = list(c(0, color_low), c(1, color_high)),
       cmin = min(df$Attendance, na.rm = TRUE),
       cmax = max(df$Attendance, na.rm = TRUE),
       showscale = FALSE,
@@ -531,7 +548,7 @@ p <- p %>%
     y = ~ExamScore,
     text = line_text_no_out,
     hoverinfo = "text",
-    line = list(color = "black", width = 2),
+    line = list(color = color_base, width = 2),
     name = "Trend line (no outliers)",
     showlegend = FALSE
   )
@@ -543,7 +560,7 @@ p <- p %>%
     y = ~ExamScore,
     text = line_text_all,
     hoverinfo = "text",
-    line = list(color = "red", width = 2, dash = "dash"),
+    line = list(color = color_low, width = 2, dash = "dash"),
     name = "Trend line (with outliers)",
     legendgroup = "with_outliers_plain",
     visible = "legendonly",
@@ -610,8 +627,8 @@ df <- rbind(
 p <- ggplot(df, aes(x = Sleep_Hours, y = Exam_Score)) +
   geom_jitter(aes(color = Distance_from_Home), alpha = 0.4, width = 0.25, height = 0.5, size = 1) +
   geom_smooth(aes(color = "Regression Line"), method = "lm", se = TRUE, linewidth = 1.2) +
-  scale_color_manual(values = c("Near" = "#4CAF50", "Moderate" = "#FFC107", "Far" = "#F44336", "Regression Line" = "red"), name = "Distance from School") +
-  stat_summary(fun = mean, geom = "point", shape = 18, size = 4, color = "red", show.legend = FALSE) +
+  scale_color_manual(values = c("Near" = color_high, "Moderate" = color_med, "Far" = color_low, "Regression Line" = color_base), name = "Distance from School") +
+  stat_summary(fun = mean, geom = "point", shape = 18, size = 4, color = color_base, show.legend = FALSE) +
   scale_y_continuous(limits = c(55, 85), breaks = seq(55, 85, 5)) +
   scale_x_continuous(breaks = 4:10) +
   labs(
@@ -712,7 +729,8 @@ profile_stats <- students %>%
     .groups = 'drop'
   ) %>%
   mutate(
-    profile_name = paste0(is_athlete, "<br>", has_extra)
+    # UPDATED: Shortened the prefix to Ath. and Non-Ath. for the bar labels
+    profile_name = paste0(ifelse(is_athlete == "Athlete", "Ath.", "Non-Ath."), "<br>", has_extra)
   )
 
 gap_row <- data.frame(
@@ -746,13 +764,13 @@ time_plot <- plot_ly(plot_data, x = ~profile_name) %>%
   add_bars(
     y = ~study_hrs,
     name = "Study Hours",
-    marker = list(color = "#232D4B"),
+    marker = list(color = color_high), 
     hovertemplate = "<b>%{x}</b><br>Study: %{y} hrs<extra></extra>"
   ) %>%
   add_bars(
     y = ~sleep_hrs,
     name = "Sleep Hours",
-    marker = list(color = "#E57200"),
+    marker = list(color = color_low), 
     hovertemplate = "<b>%{x}</b><br>Sleep: %{y} hrs<extra></extra>"
   ) %>%
   layout(
@@ -764,7 +782,7 @@ score_plot <- plot_ly(plot_data, x = ~profile_name) %>%
   add_bars(
     y = ~exam_score,
     name = "Final Exam Score",
-    marker = list(color = "#5C7F92"),
+    marker = list(color = color_med), 
     hovertemplate = "<b>%{x}</b><br>Exam Score: %{y}<extra></extra>"
   ) %>%
   layout(
@@ -802,11 +820,19 @@ final_plot <- subplot(time_plot, score_plot, nrows = 1, margin = 0.05, titleX = 
       yref = "container"
     ),
     annotations = list(
+      # Original top headers
       list(x = 0.24, y = 1.02, text = "<b>Study and Sleep Time</b>", showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 14), xanchor = "center", yanchor = "bottom"),
-      list(x = 0.76, y = 1.02, text = "<b>Exam Scores</b>", showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 14), xanchor = "center", yanchor = "bottom")
+      list(x = 0.76, y = 1.02, text = "<b>Exam Scores</b>", showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 14), xanchor = "center", yanchor = "bottom"),
+      
+      # ALIGNMENT/PADDING FIX: Tweak the "x" decimals below to nudge the labels left or right!
+      # Decrease "y" (e.g., -0.3) to push them further down.
+      list(x = 0.05, y = -0.25, text = "<b>ATHLETE</b>", showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 12, color = color_base)),
+      list(x = 0.36, y = -0.25, text = "<b>NON-ATHLETE</b>", showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 12, color = color_base)),
+      list(x = 0.63, y = -0.25, text = "<b>ATHLETE</b>", showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 12, color = color_base)),
+      list(x = 0.98, y = -0.25, text = "<b>NON-ATHLETE</b>", showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 12, color = color_base))
     ),
-    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.35),
-    margin = list(t = 130, b = 120),
+    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.4),
+    margin = list(t = 130, b = 150), 
     paper_bgcolor = "white",
     plot_bgcolor = "white",
     barmode = 'group',
