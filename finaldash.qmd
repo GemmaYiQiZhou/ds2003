@@ -32,8 +32,15 @@ color_base <- "#2C3E50"
 # Overview 
 ## Row {height= 180}
 ::: {.card title="Project Overview" fill="false"}
-This dashboard explores the *Student Performance Factors* dataset from Kaggle, which contains information about students' academic performance and the personal and social-economical factors that may influence their exam score.
-The dataset captures multiple dimensions of student experience. These include study behaviors (such as hours studied and attendance), lifestyle patterns (including sleep and physical activity), family background (such as income and parental involvement), and school-related conditions (like teacher quality and access to resources). Together, these variables provide a more holistic view of the factors that may influence academic outcomes, with **Exam_Score** as the primary measure of performance.
+This dashboard explores the *Student Performance Factors* dataset from Kaggle.
+
+It examines how different aspects of a student’s life influence their **Exam Score**, including:
+- **Study behavior** → hours studied, attendance  
+- **Lifestyle** → sleep, physical activity  
+- **Family background** → income, parental involvement  
+- **School environment** → teacher quality, access to resources  
+
+Together, these factors provide a **holistic view of academic performance**.
 :::
 
 ::: {.card title="Research Questions" fill="false"}
@@ -43,7 +50,7 @@ More specifically, this dashboard aims to:
 
 - Examine whether **academic habits** (such as hours studied and attendance) are strong predictors of performance  
 
-- Explore how **lifestyle habits** (such as sleep duration) differentiate the hihest and lowest-performing students
+- Explore how **lifestyle habits** (such as sleep duration) differentiate the highest and lowest-performing students
 
 - Assess how **extracurricular involvement** (like athletics and clubs) impacts a student's allocation of sleep and study time
 :::
@@ -94,20 +101,31 @@ ggplot(motivation_summary, aes(x = Motivation_Level, y = avg_score, fill = Motiv
 
 ## Row {height=220}
 ::: {.card title="What the Distribution Shows"}
-The distribution of exam scores provides a baseline view of student performance. Most students cluster within a central range, rather than at the extremes, suggesting that differences in performance are systematic rather than random. This motivates further exploration into which factors may explain this variation.
+The distribution of exam scores provides a baseline view of student performance. 
+
+Most students cluster around a **central score range**, with few extreme values.
+→ Performance differences appear **systematic, not random** 
+→ Suggests other factors are influencing outcomes, this motivates further exploration.
 :::
 
 
 ::: {.card title="What the Motivation Chart Shows"}
-Average exam scores do not vary dramatically across motivation levels. While students with higher motivation show slightly better performance, the differences are relatively small. This suggests that motivation alone may not be a strong explanatory factor, and that other variables (such as study habits or external support) may play a more significant role.
+Average exam scores do not vary dramatically across motivation levels. 
+
+Higher motivation is linked to **slightly better scores**, but the effect is small.
+→ Motivation alone is **not a strong predictor**  
+→ Other factors (study habits, support) likely matter more
 :::
 
-## Row {height=140}
+## Row {height=220}
 ### Goals
 
 ::: {.card title="Project Goals" fill="false}
-By combining multiple perspectives, the dashboard seeks to move beyond simple explanations of success and highlight the complexity of student achievement.
-The goal of this project is to explore how different aspects of a student's environment and behavior are associated with exam performance, and to identify which factors appear most influential.
+**Goal:** Understand what drives student performance
+
+- Analyze how **behavior, environment, and lifestyle** relate to exam scores  
+- Identify which factors are **most influential**  
+- Show that success is **multi-dimensional**, not explained by one variable  
 
 <a href="#interactive-analysis" class="floating-next">Go to Interactive Analysis →</a>
 :::
