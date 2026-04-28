@@ -127,7 +127,7 @@ Follow the charts below to explore how these layers interact. View the "Key Insi
 
 ## Row {height=500}
 
-### Chart {width=75%}
+### Chart {width=70%}
 
 ```{r}
 df$Family_Income        <- as.character(df$Family_Income)
@@ -339,7 +339,7 @@ fig <- fig %>%
 fig
 ```
 
-### Key Insights {width=25%}
+### Key Insights {width=30%}
 
 ::: {.card title="Key Insights"}
 **What This Shows**
@@ -370,7 +370,7 @@ Income correlates with slightly higher scores, but it isn't the only factor. Sup
 
 ## Row {height=500}
 
-### Chart {width=75%}
+### Chart {width=70%}
 
 ```{r}
 df <- read.csv("StudentPerformanceFactors.csv")
@@ -585,7 +585,7 @@ p %>%
   config(displayModeBar = TRUE, scrollZoom = TRUE)
 ```
 
-### Key Insights {width=25%}
+### Key Insights {width=30%}
 
 ::: {.card title="Key Insights"}
 **What This Shows**
@@ -616,7 +616,7 @@ Attendance plays an important role in academic success. Showing up consistently 
 
 ## Row {height=500}
 
-### Chart {width=75%}
+### Chart {width=70%}
 
 ```{r}
 df <- read.csv("StudentPerformanceFactors.csv")
@@ -681,7 +681,7 @@ legend = list(title = list(text = "<b>Click to filter</b><br>Distance from Schoo
 pl
 ```
 
-### Key Insights {width=25%}
+### Key Insights {width=30%}
 
 ::: {.card title="Key Insights"}
 **What This Shows**
@@ -713,7 +713,7 @@ Sleep alone is not a strong driver of academic performance in this dataset. The 
 
 ## Row {height=600}
 
-### Chart {width=75%}
+### Chart {width=70%}
 
 ```{r}
 students <- read.csv("StudentPerformanceFactors.csv")
@@ -846,7 +846,7 @@ final_plot <- subplot(time_plot, score_plot, nrows = 1, margin = 0.05, titleX = 
 final_plot
 ```
 
-### Key Insights {width=25%}
+### Key Insights {width=30%}
 
 ::: {.card title="Key Insights"}
 **What This Shows**
