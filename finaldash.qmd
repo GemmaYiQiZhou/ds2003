@@ -35,6 +35,7 @@ color_base <- "#2C3E50"
 This dashboard explores the *Student Performance Factors* dataset from Kaggle.
 
 It examines how different aspects of a student’s life influence their **Exam Score**, including:
+
 - **Study behavior** → hours studied, attendance  
 - **Lifestyle** → sleep, physical activity  
 - **Family background** → income, parental involvement  
@@ -104,6 +105,7 @@ ggplot(motivation_summary, aes(x = Motivation_Level, y = avg_score, fill = Motiv
 The distribution of exam scores provides a baseline view of student performance. 
 
 Most students cluster around a **central score range**, with few extreme values.
+
 → Performance differences appear **systematic, not random** 
 → Suggests other factors are influencing outcomes, this motivates further exploration.
 :::
@@ -113,6 +115,7 @@ Most students cluster around a **central score range**, with few extreme values.
 Average exam scores do not vary dramatically across motivation levels. 
 
 Higher motivation is linked to **slightly better scores**, but the effect is small.
+
 → Motivation alone is **not a strong predictor**  
 → Other factors (study habits, support) likely matter more
 :::
