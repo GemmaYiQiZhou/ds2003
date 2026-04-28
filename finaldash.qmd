@@ -393,6 +393,7 @@ Income correlates with slightly higher scores, but it isn't the only factor. Sup
 ```{r}
 df <- read.csv("StudentPerformanceFactors.csv")
 
+# rename columns
 df <- df %>%
   rename(
     HoursStudied = Hours_Studied,
@@ -400,6 +401,7 @@ df <- df %>%
     Attendance = Attendance
   )
 
+# filter outliers
 q1_h <- quantile(df$HoursStudied, 0.25, na.rm = TRUE)
 q3_h <- quantile(df$HoursStudied, 0.75, na.rm = TRUE)
 iqr_h <- q3_h - q1_h
@@ -420,18 +422,23 @@ df <- df %>%
 df_main <- df %>% filter(!is_outlier)
 df_out  <- df %>% filter(is_outlier)
 
+# fit regression line (without outliers)
 fit_no_outliers <- lm(ExamScore ~ HoursStudied, data = df_main)
+
 slope_no_outliers <- coef(fit_no_outliers)[2]
 intercept_no_outliers <- coef(fit_no_outliers)[1]
 corr_no_outliers <- cor(df_main$HoursStudied, df_main$ExamScore, use = "complete.obs")
 r2_no_outliers <- summary(fit_no_outliers)$r.squared
 
+# regression with all data
 fit_all <- lm(ExamScore ~ HoursStudied, data = df)
+
 slope_all <- coef(fit_all)[2]
 intercept_all <- coef(fit_all)[1]
 corr_all <- cor(df$HoursStudied, df$ExamScore, use = "complete.obs")
 r2_all <- summary(fit_all)$r.squared
 
+# hover text
 df_main <- df_main %>%
   mutate(
     point_text = paste0(
@@ -452,12 +459,14 @@ df_out <- df_out %>%
     )
   )
 
+# predicted x values for regression lines
 x_seq <- seq(
   min(df$HoursStudied, na.rm = TRUE),
   max(df$HoursStudied, na.rm = TRUE),
   length.out = 200
 )
 
+# line without outliers
 line_no_out <- data.frame(
   HoursStudied = x_seq,
   ExamScore = predict(fit_no_outliers, newdata = data.frame(HoursStudied = x_seq))
@@ -471,6 +480,7 @@ line_text_no_out <- paste0(
   "<br>R²: ", round(r2_no_outliers, 3)
 )
 
+# line with all data
 line_all <- data.frame(
   HoursStudied = x_seq,
   ExamScore = predict(fit_all, newdata = data.frame(HoursStudied = x_seq))
@@ -486,12 +496,18 @@ line_text_all <- paste0(
 
 p <- plot_ly()
 
+
+# main data, green, visible by default
 p <- p %>%
   add_markers(
     data = df_main,
     x = ~HoursStudied,
     y = ~ExamScore,
-    marker = list(color = color_high, symbol = "circle", size = 8),
+    marker = list(
+      color = color_high,
+      symbol = "circle",
+      size = 8
+    ),
     text = ~point_text,
     hoverinfo = "text",
     name = "Students",
@@ -500,14 +516,17 @@ p <- p %>%
     visible = TRUE
   )
 
+# outliers, green, hidden by default
 p <- p %>%
   add_markers(
     data = df_out,
     x = ~HoursStudied,
     y = ~ExamScore,
-    marker = list(color = color_high,
-                  
-      symbol = "circle", size = 8),
+    marker = list(
+      color = color_high,
+      symbol = "circle",
+      size = 8
+    ),
     text = ~point_text,
     hoverinfo = "text",
     name = "Outliers",
@@ -516,21 +535,30 @@ p <- p %>%
     showlegend = TRUE
   )
 
+
+# main data colored by attendance, hidden by default
 p <- p %>%
   add_markers(
     data = df_main,
     x = ~HoursStudied,
     y = ~ExamScore,
     marker = list(
-      color = ~Attendance,
-      colorscale = list(c(0, color_low), c(1, color_high)),
-      cmin = min(df$Attendance, na.rm = TRUE),
-      cmax = max(df$Attendance, na.rm = TRUE),
-      showscale = TRUE,
-      colorbar = list(title = "Attendance", x = 1.02, len = 0.75),
-      symbol = "circle",
-      size = 8
-    ),
+  color = ~Attendance,
+  colorscale = list(
+    c(0, color_low),
+    c(1, color_high)
+  ),
+  cmin = min(df$Attendance, na.rm = TRUE),
+  cmax = max(df$Attendance, na.rm = TRUE),
+  showscale = TRUE,
+  colorbar = list(
+    title = "Attendance",
+    x = 1.02,
+    len = 0.75
+  ),
+  symbol = "circle",
+  size = 8
+),
     text = ~point_text,
     hoverinfo = "text",
     name = "Color by Attendance",
@@ -539,28 +567,39 @@ p <- p %>%
     showlegend = TRUE
   )
 
+# outliers colored by attendance, hidden by default
 p <- p %>%
   add_markers(
     data = df_out,
     x = ~HoursStudied,
     y = ~ExamScore,
     marker = list(
-      color = ~Attendance,
-      colorscale = list(c(0, color_low), c(1, color_high)),
-      cmin = min(df$Attendance, na.rm = TRUE),
-      cmax = max(df$Attendance, na.rm = TRUE),
-      showscale = FALSE,
-      symbol = "circle",
-      size = 8
-    ),
+  color = ~Attendance,
+  colorscale = list(
+    c(0, color_high),
+    c(1, color_low)
+  ),
+  cmin = min(df$Attendance, na.rm = TRUE),
+  cmax = max(df$Attendance, na.rm = TRUE),
+  showscale = FALSE,
+  colorbar = list(
+    title = "Attendance",
+    x = 1.02,
+    len = 0.75
+  ),
+  symbol = "circle",
+  size = 8
+),
     text = ~point_text,
     hoverinfo = "text",
     name = "Attendance-colored outliers",
-    legendgroup = "attendance_colored",
-    visible = "legendonly",
+    legendgroup = "attendance_colored_outliers",
+    visible = FALSE,
     showlegend = FALSE
   )
 
+
+# trend line without outliers: always visible
 p <- p %>%
   add_lines(
     data = line_no_out,
@@ -568,11 +607,12 @@ p <- p %>%
     y = ~ExamScore,
     text = line_text_no_out,
     hoverinfo = "text",
-    line = list(color = color_base, width = 2),
+    line = list(color = "black", width = 2),
     name = "Trend line (no outliers)",
     showlegend = FALSE
   )
 
+# trend line with outliers: toggleable
 p <- p %>%
   add_lines(
     data = line_all,
@@ -580,7 +620,7 @@ p <- p %>%
     y = ~ExamScore,
     text = line_text_all,
     hoverinfo = "text",
-    line = list(color = color_low, width = 2, dash = "dash"),
+    line = list(color = "red", width = 2, dash = "dash"),
     name = "Trend line (with outliers)",
     legendgroup = "with_outliers_plain",
     visible = "legendonly",
@@ -600,7 +640,10 @@ p %>%
       y = 0.85
     )
   ) %>%
-  config(displayModeBar = TRUE, scrollZoom = TRUE)
+  config(
+    displayModeBar = TRUE,
+    scrollZoom = TRUE
+  )
 ```
 
 ### Key Insights {width=30%}
@@ -614,12 +657,12 @@ Explores the relationship between hours studied and exam performance, and how at
 
 - Toggle **Color by Attendance** in the legend to color points by attendance rate.
 - Toggle **Outliers** to include or exclude extreme data points and see how they shift the trend line.
-- Hover over the trend line to see the exact slope, correlation, and R² value.
-- Scroll to zoom, or drag to select a region to zoom in on.
+- **Hover** over the data points and trend line to see the exact scores, slope, correlation, and R² value.
+- Select a region to **zoom** in on.
 
 **Study Time & Performance**
 
-- There is a positive relationship between hours studied and exam score.
+- There is a slight positive relationship between hours studied and exam score.
 - The shallow slope and low R² suggest that hours studied alone explains only a small portion of score variation.
 
 **The Role of Attendance**
